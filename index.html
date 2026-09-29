@@ -1,0 +1,2771 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CinéIA Suite — Film · Spectrum · Vidéo simple · Mon histoire</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+        --bg:#0a0a0a; --panel:#151515; --panel-2:#1a1a1a; --border:#2a2a2a;
+        --accent:#c4b5fd; --accent-dark:#a78bfa; --text:#e0e0e0; --text-dim:#888;
+        --success:#4ade80; --error:#f87171; --warn:#facc15;
+    }
+    body { font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+        background:var(--bg); color:var(--text); min-height:100vh; display:flex;
+        flex-direction:column; align-items:center; padding:2rem 1rem; }
+    .container { max-width:1200px; width:100%; }
+    header { text-align:center; margin-bottom:1.5rem; }
+    h1 { font-size:1.9rem; font-weight:300; letter-spacing:0.05em; color:#f0f0f0; }
+    .subtitle { color:var(--text-dim); font-size:0.85rem; font-style:italic; margin-top:0.3rem; }
+
+    /* ---- Settings / quota (shared) ---- */
+    .settings-toggle { background:transparent; border:1px solid var(--border);
+        color:var(--text-dim); padding:0.5rem 1rem; border-radius:8px; font-size:0.8rem;
+        cursor:pointer; margin-bottom:1rem; }
+    .settings-toggle:hover { border-color:var(--accent-dark); color:var(--accent); }
+    .settings-panel { background:var(--panel); border:1px solid var(--border);
+        border-radius:12px; padding:1.25rem; margin-bottom:1.5rem; display:none; }
+    .settings-panel.visible { display:block; }
+    .settings-row { display:flex; gap:0.75rem; align-items:end; }
+    .settings-hint { font-size:0.75rem; color:var(--text-dim); margin-top:0.5rem; }
+
+    .quota-bar { background:var(--panel); border:1px solid var(--border); border-radius:12px;
+        padding:0.8rem 1.2rem; margin-bottom:1.5rem; display:flex; gap:1.5rem;
+        flex-wrap:wrap; align-items:center; font-size:0.75rem; }
+    .quota-item { display:flex; align-items:center; gap:0.5rem; }
+    .quota-item .label { color:var(--text-dim); }
+    .quota-item .value { font-weight:600; font-variant-numeric:tabular-nums; }
+    .quota-item .value.ok { color:var(--success); }
+    .quota-item .value.warn { color:var(--warn); }
+    .quota-item .value.danger { color:var(--error); }
+
+    /* ---- Tabs ---- */
+    .tabs { display:flex; gap:0.6rem; margin-bottom:1.5rem; flex-wrap:wrap; }
+    .tab-btn { flex:1; min-width:160px; padding:0.9rem 1rem; background:var(--panel);
+        border:1px solid var(--border); border-radius:10px; color:var(--text-dim);
+        font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.2s; }
+    .tab-btn:hover { border-color:var(--accent-dark); color:var(--text); }
+    .tab-btn.active { background:#2a2035; border-color:var(--accent-dark); color:var(--accent); }
+    .tab-content { display:none; }
+    .tab-content.active { display:block; }
+
+    /* ---- Buttons / forms (shared) ---- */
+    .btn { padding:1rem 2rem; background:var(--accent-dark); color:#0a0a0a; border:none;
+        border-radius:10px; font-size:1rem; font-weight:600; cursor:pointer;
+        transition:background 0.2s,transform 0.1s; width:100%; }
+    .btn:hover:not(:disabled) { background:var(--accent); }
+    .btn:active:not(:disabled) { transform:scale(0.98); }
+    .btn:disabled { background:#333; color:#666; cursor:not-allowed; }
+    .btn-secondary { background:#2a2a2a; color:var(--text); }
+    .btn-secondary:hover:not(:disabled) { background:#3a3a3a; }
+
+    .form-panel { background:var(--panel); border:1px solid var(--border);
+        border-radius:16px; padding:2rem; margin-bottom:2rem; }
+    .form-row { display:flex; gap:1rem; margin-bottom:1rem; flex-wrap:wrap; }
+    .form-row > * { flex:1; min-width:180px; }
+    label { display:block; font-size:0.8rem; color:var(--text-dim); margin-bottom:0.4rem;
+        text-transform:uppercase; letter-spacing:0.08em; }
+    textarea, select, input[type="number"], input[type="password"], input[type="text"] {
+        width:100%; padding:0.85rem 1rem; border-radius:10px; border:1px solid var(--border);
+        background:#0f0f0f; color:var(--text); font-family:inherit; font-size:0.95rem;
+        transition:border-color 0.2s; }
+    textarea { height:130px; resize:vertical; min-height:80px; }
+    textarea:focus, select:focus, input:focus { outline:none; border-color:var(--accent-dark); }
+    select option { background:#1a1a1a; color:var(--text); }
+    .slider-row { display:flex; align-items:center; gap:1rem; }
+    .slider-row input[type="range"] { flex:1; accent-color:var(--accent-dark); }
+    .slider-value { font-size:1.1rem; font-weight:600; color:var(--accent); min-width:3ch;
+        text-align:right; font-variant-numeric:tabular-nums; }
+
+    .panel { background:var(--panel); border:1px solid var(--border); border-radius:16px;
+        padding:1.5rem; margin-bottom:1.5rem; display:none; }
+    .panel.visible { display:block; }
+    .panel-title { font-size:0.8rem; color:var(--accent-dark); text-transform:uppercase;
+        letter-spacing:0.1em; margin-bottom:1rem; font-weight:600; }
+
+    .status-line { font-size:0.9rem; color:var(--accent-dark); margin-bottom:1rem;
+        display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap; }
+    .status-line .dot { width:8px; height:8px; border-radius:50%; background:var(--accent-dark);
+        animation:pulse 1.5s infinite; flex-shrink:0; }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+    .cooldown-badge { background:#3a2a15; color:var(--warn); padding:0.2rem 0.6rem;
+        border-radius:6px; font-size:0.75rem; font-weight:600; }
+
+    .error-box { background:#2a1515; border:1px solid var(--error); border-radius:10px;
+        padding:1rem; color:var(--error); font-size:0.85rem; margin-top:1rem; display:none; }
+    .error-box.visible { display:block; }
+    .hidden { display:none !important; }
+
+    /* ---- Film tab specifics ---- */
+    .bible-title { font-size:1.6rem; font-weight:300; color:#f0f0f0; margin-bottom:0.3rem; font-style:italic; }
+    .bible-logline { color:var(--text-dim); font-size:0.9rem; margin-bottom:1.2rem; }
+    .bible-section { margin-bottom:1rem; }
+    .bible-section-title { font-size:0.75rem; color:var(--accent); text-transform:uppercase;
+        letter-spacing:0.1em; margin-bottom:0.4rem; font-weight:600; }
+    .character-card { background:var(--panel-2); border:1px solid var(--border);
+        border-radius:10px; padding:0.8rem; margin-bottom:0.5rem; }
+    .character-name { font-weight:600; color:var(--accent); font-size:0.9rem; }
+    .character-role { font-size:0.75rem; color:var(--text-dim); font-style:italic; margin-bottom:0.3rem; }
+    .character-appearance { font-size:0.8rem; color:var(--text); line-height:1.4; }
+    .bible-text { font-size:0.85rem; color:var(--text); line-height:1.5; }
+
+    .scene-item { background:var(--panel-2); border:1px solid var(--border);
+        border-left:3px solid var(--accent-dark); border-radius:10px; padding:0.9rem; margin-bottom:0.6rem; }
+    .scene-header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:0.3rem; }
+    .scene-number { font-size:0.7rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.1em; }
+    .scene-act { font-size:0.65rem; color:var(--accent); background:#2a2035; padding:0.15rem 0.5rem; border-radius:4px; }
+    .scene-title { font-size:0.95rem; color:#f0f0f0; font-weight:500; margin-bottom:0.4rem; }
+    .scene-beat { font-size:0.82rem; color:var(--text); line-height:1.4; margin-bottom:0.5rem; }
+    .scene-dialogue { font-size:0.85rem; color:var(--accent); font-style:italic;
+        padding-left:0.8rem; border-left:2px solid var(--accent-dark); margin-bottom:0.4rem; line-height:1.4; }
+    .scene-meta { font-size:0.7rem; color:var(--text-dim); display:flex; gap:0.8rem; flex-wrap:wrap; }
+
+    .clips-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr)); gap:0.75rem; }
+    .clip-card { background:#1a1a1a; border:1px solid var(--border); border-radius:12px;
+        padding:1rem; text-align:center; transition:border-color 0.3s,opacity 0.3s; }
+    .clip-card.pending { opacity:0.45; }
+    .clip-card.processing { border-color:var(--accent-dark); }
+    .clip-card.done { border-color:var(--success); }
+    .clip-card.failed { border-color:var(--error); }
+    .clip-number { font-size:0.7rem; color:#666; text-transform:uppercase; letter-spacing:0.1em; }
+    .clip-title { font-size:0.75rem; color:#ccc; margin-bottom:0.4rem; min-height:2em; line-height:1.2; }
+    .clip-icon { font-size:1.4rem; margin-bottom:0.3rem; }
+    .clip-timer { font-size:1.1rem; font-weight:600; color:var(--text); font-variant-numeric:tabular-nums; }
+    .clip-status-text { font-size:0.68rem; color:var(--text-dim); margin-top:0.2rem; }
+    .clip-card.done .clip-timer { color:var(--success); }
+    .clip-card.failed .clip-timer { color:var(--error); }
+    .clip-retry-btn { margin-top:0.5rem; width:100%; padding:0.35rem 0.5rem; font-size:0.68rem;
+        font-weight:600; background:#2a1515; color:var(--error); border:1px solid var(--error);
+        border-radius:6px; cursor:pointer; transition:background 0.2s; }
+    .clip-retry-btn:hover { background:#3a1a1a; }
+
+    /* ---- Video gallery (shared by all 3 tabs) ---- */
+    .video-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(230px,1fr)); gap:1rem; margin-top:1rem; }
+    .video-item { background:var(--panel-2); border-radius:12px; overflow:hidden;
+        border:1px solid var(--border); animation:fadeIn 0.6s ease-in; }
+    @keyframes fadeIn { from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+    .video-item video { width:100%; display:block; aspect-ratio:9/16; object-fit:cover; background:#000; }
+    .video-caption { padding:0.7rem 0.8rem; background:var(--panel); }
+    .video-caption-title { font-size:0.8rem; color:var(--accent); font-weight:600; margin-bottom:0.3rem; }
+    .video-caption-meta { font-size:0.7rem; color:var(--text-dim); margin-top:0.2rem; }
+    .video-caption-dialogue { font-size:0.78rem; color:#ddd; font-style:italic;
+        padding-left:0.6rem; border-left:2px solid var(--accent-dark); line-height:1.4; }
+
+    /* ---- Spectrum tab specifics ---- */
+    .upload-area { background:var(--panel); border:2px dashed var(--border);
+        border-radius:16px; padding:2.5rem; text-align:center; cursor:pointer;
+        transition:border-color 0.2s, background 0.2s; margin-bottom:1.5rem; }
+    .upload-area:hover, .upload-area.dragover { border-color:var(--accent-dark); background:#1a1525; }
+    .upload-area input[type="file"] { display:none; }
+    .upload-icon { font-size:3rem; margin-bottom:1rem; }
+    .upload-text { font-size:1.1rem; color:var(--text); margin-bottom:0.5rem; }
+    .upload-hint { font-size:0.8rem; color:var(--text-dim); }
+    .preview-thumb { max-width:100%; max-height:200px; border-radius:10px; margin:1rem auto 0; display:none; }
+    .preview-thumb.visible { display:block; }
+
+    .options-row { display:flex; gap:1rem; margin-bottom:1rem; flex-wrap:wrap; }
+    .options-row > * { flex:1; min-width:200px; }
+
+    .styles-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr));
+        gap:0.6rem; margin-bottom:1.5rem; max-height:450px; overflow-y:auto;
+        padding:0.5rem; background:var(--panel); border-radius:12px; border:1px solid var(--border); }
+    .style-checkbox { display:flex; align-items:center; gap:0.5rem; padding:0.6rem 0.8rem;
+        background:var(--panel-2); border:1px solid var(--border); border-radius:8px;
+        cursor:pointer; font-size:0.8rem; transition:all 0.2s; user-select:none; }
+    .style-checkbox:hover { border-color:var(--accent-dark); }
+    .style-checkbox.checked { background:#2a2035; border-color:var(--accent-dark); color:var(--accent); }
+    .style-checkbox input { width:auto; margin:0; accent-color:var(--accent-dark); }
+
+    .section-title { font-size:0.85rem; color:var(--accent-dark); text-transform:uppercase;
+        letter-spacing:0.1em; margin-bottom:0.8rem; font-weight:600; }
+
+    .queue-panel { margin-top:1.5rem; }
+    .queue-item { display:flex; align-items:center; gap:1rem; padding:0.8rem 1rem;
+        background:var(--panel); border:1px solid var(--border); border-radius:10px;
+        margin-bottom:0.5rem; transition:border-color 0.3s, opacity 0.3s; }
+    .queue-item.pending { opacity:0.5; }
+    .queue-item.processing { border-color:var(--accent-dark); }
+    .queue-item.done { border-color:var(--success); }
+    .queue-item.failed { border-color:var(--error); }
+    .queue-icon { font-size:1.2rem; width:2rem; text-align:center; flex-shrink:0; }
+    .queue-info { flex:1; min-width:0; }
+    .queue-style { font-size:0.85rem; color:var(--accent); font-weight:600; }
+    .queue-meta { font-size:0.7rem; color:var(--text-dim); margin-top:0.15rem; display:flex; gap:0.8rem; flex-wrap:wrap; }
+    .queue-status { font-size:0.75rem; color:var(--text-dim); text-align:right; min-width:90px; flex-shrink:0; }
+
+    .duration-info { background:#1a2535; border-left:3px solid var(--accent);
+        padding:0.6rem 0.9rem; border-radius:8px; font-size:0.78rem; color:var(--accent); margin-bottom:1rem; }
+
+    /* ---- Log box (shared) ---- */
+    .log-box { margin-top:1rem; padding:0.75rem; background:#0f0f0f; border-radius:10px;
+        border:1px solid #222; font-family:ui-monospace,monospace; font-size:0.7rem;
+        color:#666; max-height:220px; overflow-y:auto; display:none; }
+    .log-box.visible { display:block; }
+    .log-box div { padding:1px 0; }
+    .log-box .hl { color:var(--accent); }
+    .log-box .ok { color:var(--success); }
+    .log-box .err { color:var(--error); }
+    .log-box .warn { color:var(--warn); }
+
+    /* ---- History (shared) ---- */
+    .history-section { margin-top:3rem; border-top:1px solid var(--border); padding-top:2rem; }
+    .history-title { font-size:1.1rem; font-weight:300; color:var(--accent-dark); margin-bottom:1rem; }
+    .history-empty { color:var(--text-dim); font-size:0.85rem; font-style:italic; }
+    .history-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr)); gap:0.75rem; margin-top:1rem; }
+    .history-item { background:var(--panel); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+    .history-item video { width:100%; display:block; aspect-ratio:9/16; object-fit:cover; }
+    .history-meta { padding:0.5rem; font-size:0.7rem; color:var(--text-dim); line-height:1.4; }
+    .history-meta .style { color:var(--accent); font-weight:600; }
+    .history-mode-badge { display:inline-block; font-size:0.65rem; padding:0.1rem 0.45rem;
+        border-radius:5px; background:#2a2035; color:var(--accent); margin-bottom:0.2rem; }
+
+</style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>CinéIA Suite</h1>
+        <p class="subtitle">Trois façons de créer vos films et vidéos par IA — Propulsé par l'API Agnes AI</p>
+    </header>
+
+    <button class="settings-toggle" onclick="document.getElementById('settings-panel').classList.toggle('visible')">
+        ⚙️ Paramètres API
+    </button>
+    <div id="settings-panel" class="settings-panel">
+        <div class="settings-row">
+            <div style="flex:1;">
+                <label for="api-key-input">Clé API Agnes AI</label>
+                <input type="password" id="api-key-input" placeholder="sk-...">
+            </div>
+            <button class="btn" style="width:auto; padding:0.85rem 1.5rem;" onclick="saveApiKey()">Sauvegarder</button>
+        </div>
+        <p class="settings-hint">La clé est stockée localement (localStorage). Jamais envoyée ailleurs qu'à l'API Agnes AI. Elle est partagée par les 4 modes ci-dessous.</p>
+    </div>
+
+    <div class="quota-bar" id="quota-bar">
+        <div class="quota-item"><span class="label">📝 Texte</span><span class="value ok" id="quota-text">0/20</span><span class="label">RPM</span></div>
+        <div class="quota-item"><span class="label">🎬 Vidéo</span><span class="value ok" id="quota-video">0/1</span><span class="label">RPM</span></div>
+        <div class="quota-item"><span class="label">ℹ️</span><span class="label">Quota partagé entre les 4 modes (même clé API)</span></div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="film" onclick="switchTab('film')">🎬 Film (scénario → clips)</button>
+        <button class="tab-btn" data-tab="spectrum" onclick="switchTab('spectrum')">🖼️ Spectrum (image → vidéos)</button>
+        <button class="tab-btn" data-tab="simple" onclick="switchTab('simple')">⚡ Vidéo simple (texte → 1 plan)</button>
+        <button class="tab-btn" data-tab="story" onclick="switchTab('story')">📝 Mon histoire (dialogues exacts)</button>
+    </div>
+
+    <div id="tab-film" class="tab-content active">
+        <div class="form-panel">
+            <div class="form-row">
+                <div style="flex:1 1 100%;">
+                    <label for="film-user-prompt">Votre idée de film</label>
+                    <textarea id="film-user-prompt" placeholder="Ex : Des chats extraterrestres maîtres de kung-fu débarquent sur Terre pour sauver les animaux d'un capitalisme dévoyé…"></textarea>
+                </div>
+            </div>
+            <div class="form-row">
+                <div style="flex:0 0 220px; min-width:180px;">
+                    <label for="film-clip-count">Nombre de clips (1–20)</label>
+                    <div class="slider-row">
+                        <input type="range" id="film-clip-count" min="1" max="20" value="8" step="1"
+                               oninput="document.getElementById('film-clip-count-val').textContent=this.value">
+                        <span class="slider-value" id="film-clip-count-val">8</span>
+                    </div>
+                </div>
+                <div style="flex:1 1 260px;">
+                    <label for="film-style-select">Style visuel (appliqué à tout le film)</label>
+                    <select id="film-style-select"></select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div style="flex:0 0 auto; min-width:200px;">
+                    <label style="display:flex; align-items:center; gap:0.5rem; text-transform:none; letter-spacing:0; font-size:0.85rem; color:var(--text);">
+                        <input type="checkbox" id="film-audio-enabled" checked style="width:auto;">
+                        Générer l'audio (musique d'ambiance + effets)
+                    </label>
+                </div>
+            </div>
+            <button id="film-start-btn" class="btn" onclick="startFilmCreation()">🎬 Créer le film</button>
+            <div id="film-error-box" class="error-box"></div>
+        </div>
+
+        <div id="film-bible-panel" class="panel">
+            <div class="panel-title">📖 Bible du film</div>
+            <div id="film-bible-content"></div>
+        </div>
+
+        <div id="film-scenes-panel" class="panel">
+            <div class="panel-title">🎞️ Découpage — Scènes</div>
+            <div id="film-scenes-content"></div>
+        </div>
+
+        <div id="film-progress-panel" class="panel">
+            <div class="status-line">
+                <span class="dot"></span>
+                <span id="film-global-status-text">Initialisation…</span>
+                <span id="film-cooldown-badge" class="cooldown-badge" style="display:none;"></span>
+            </div>
+            <div id="film-clips-grid" class="clips-grid"></div>
+        </div>
+
+        <div id="film-gallery-panel" class="panel">
+            <div class="panel-title" id="film-gallery-title">✦ Vos clips apparaîtront ici ✦</div>
+            <div id="film-video-grid" class="video-grid"></div>
+        </div>
+    </div>
+
+    <div id="tab-spectrum" class="tab-content">
+        <div class="upload-area" id="spec-upload-area">
+            <input type="file" id="spec-file-input" accept="image/*">
+            <div class="upload-icon">🖼️</div>
+            <div class="upload-text">Appuyez pour choisir une image</div>
+            <div class="upload-hint">JPG, PNG, WEBP — elle servira de première frame pour toutes les vidéos</div>
+            <img id="spec-preview-thumb" class="preview-thumb" alt="Aperçu">
+        </div>
+
+        <button class="btn btn-secondary" onclick="clearSpecImage()" style="width:auto; margin-bottom:1.5rem;">
+            🗑️ Retirer l'image
+        </button>
+
+        <div class="section-title">🎨 Choisissez vos styles (cochez ceux qui vous plaisent)</div>
+        <div class="styles-grid" id="spec-styles-grid"></div>
+
+        <div class="duration-info" id="spec-duration-info">
+            ⏱ Durée : 6,4 s par vidéo (153 frames à 24 fps) — optimal pour le tier gratuit
+        </div>
+
+        <div class="options-row">
+            <div>
+                <label for="spec-duration-select">Durée de chaque vidéo</label>
+                <select id="spec-duration-select">
+                    <option value="121">5,0 s — court et efficace</option>
+                    <option value="153" selected>6,4 s — recommandé</option>
+                    <option value="241">10,0 s — immersif</option>
+                </select>
+            </div>
+            <div>
+                <label for="spec-motion-select">Mouvement / action (excentrique par défaut)</label>
+                <select id="spec-motion-select">
+                    <option value="excentrique" selected>🤪 Excentrique — imprévisible et absurde</option>
+                    <option value="hallucinant">🌀 Hallucinant — surréaliste et déroutant</option>
+                    <option value="spectaculaire">💥 Spectaculaire — explosions visuelles</option>
+                    <option value="impressionnant">✨ Impressionnant — techniquement époustouflant</option>
+                    <option value="shaolin">🥋 Kung-fu Shaolin — katas fluides</option>
+                    <option value="hiphop">💃 Hip-hop — mouvements urbains</option>
+                    <option value="robot">🤖 Robot saccadé — mécanique et précis</option>
+                    <option value="ralenti">⏳ Ralenti — chaque micro-geste amplifié</option>
+                    <option value="contemporain">🩰 Danse contemporaine — fluide et abstraite</option>
+                    <option value="cinematique">🎬 Cinématique — lent et délibéré</option>
+                </select>
+            </div>
+        </div>
+
+        <button id="spec-generate-btn" class="btn" onclick="startSpectrumGeneration()" disabled>
+            🎬 Générer les vidéos
+        </button>
+        <div id="spec-error-box" class="error-box"></div>
+
+        <div id="spec-status-panel" class="hidden" style="margin-top:1.5rem;">
+            <div class="status-line">
+                <span class="dot"></span>
+                <span id="spec-global-status-text">Initialisation…</span>
+                <span id="spec-cooldown-badge" class="cooldown-badge" style="display:none;"></span>
+            </div>
+        </div>
+
+        <div id="spec-queue-panel" class="queue-panel hidden"></div>
+
+        <div id="spec-gallery-panel" class="hidden">
+            <div class="section-title">✦ Vidéos générées ✦</div>
+            <div id="spec-video-grid" class="video-grid"></div>
+        </div>
+    </div>
+
+    <div id="tab-simple" class="tab-content">
+        <div class="form-panel">
+            <div class="form-row">
+                <div style="flex:1 1 100%;">
+                    <label for="simple-user-prompt">Votre idée de plan</label>
+                    <textarea id="simple-user-prompt" placeholder="Ex : Un vieux pêcheur breton regarde l'horizon pendant une tempête, la mer déchaînée derrière lui…"></textarea>
+                </div>
+            </div>
+            <div class="form-row">
+                <div style="flex:1 1 260px;">
+                    <label for="simple-style-select">Style visuel</label>
+                    <select id="simple-style-select"></select>
+                </div>
+                <div style="flex:0 0 220px; min-width:180px;">
+                    <label for="simple-duration-select">Durée du plan</label>
+                    <select id="simple-duration-select">
+                        <option value="121">5,0 s — court et efficace</option>
+                        <option value="153" selected>6,4 s — recommandé</option>
+                        <option value="241">10,0 s — immersif</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div style="flex:0 0 auto; min-width:200px;">
+                    <label style="display:flex; align-items:center; gap:0.5rem; text-transform:none; letter-spacing:0; font-size:0.85rem; color:var(--text);">
+                        <input type="checkbox" id="simple-audio-enabled" checked style="width:auto;">
+                        Générer l'audio (musique d'ambiance + effets)
+                    </label>
+                </div>
+            </div>
+            <button id="simple-start-btn" class="btn" onclick="startSimpleGeneration()">⚡ Générer la vidéo</button>
+            <div id="simple-error-box" class="error-box"></div>
+        </div>
+
+        <div id="simple-status-panel" class="panel">
+            <div class="status-line">
+                <span class="dot"></span>
+                <span id="simple-global-status-text">Initialisation…</span>
+                <span id="simple-cooldown-badge" class="cooldown-badge" style="display:none;"></span>
+            </div>
+        </div>
+
+        <div id="simple-gallery-panel" class="panel">
+            <div class="panel-title">✦ Votre vidéo ✦</div>
+            <div id="simple-video-grid" class="video-grid"></div>
+        </div>
+    </div>
+
+    <div id="tab-story" class="tab-content">
+        <div class="form-panel">
+            <div class="form-row">
+                <div style="flex:1 1 100%;">
+                    <label for="story-user-text">Votre histoire — écrivez les répliques entre guillemets, précédées du nom du personnage</label>
+                    <textarea id="story-user-text" style="height:220px;" placeholder="Ex :
+Marie sort de la maison sous la pluie, inquiète.
+Marie : « Paul, attends ! Ne pars pas comme ça ! »
+Paul se retourne, le visage fermé.
+Paul : « Il est trop tard, Marie. J'ai pris ma décision. »
+..."></textarea>
+                </div>
+            </div>
+            <p class="settings-hint" style="margin:-0.5rem 0 1rem;">
+                💬 Toute réplique entre guillemets sera reprise <strong>mot pour mot</strong> — l'IA n'invente et ne reformule jamais vos dialogues. Le reste du texte décrit l'action entre les répliques.
+            </p>
+            <div class="form-row">
+                <div style="flex:1 1 260px;">
+                    <label for="story-style-select">Style visuel</label>
+                    <select id="story-style-select"></select>
+                </div>
+                <div style="flex:0 0 220px; min-width:180px;">
+                    <label for="story-clip-length">Durée de chaque plan</label>
+                    <select id="story-clip-length" onchange="updateStoryEstimate()">
+                        <option value="121">5,0 s</option>
+                        <option value="153" selected>6,4 s</option>
+                        <option value="241">10,0 s — moins de plans au total</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div style="flex:1 1 100%;">
+                    <label for="story-duration">Durée totale visée : <span id="story-duration-val">3</span> min</label>
+                    <div class="slider-row">
+                        <input type="range" id="story-duration" min="1" max="10" value="3" step="1"
+                               oninput="document.getElementById('story-duration-val').textContent=this.value; updateStoryEstimate();">
+                    </div>
+                </div>
+            </div>
+            <div class="duration-info" id="story-estimate-info"></div>
+            <button id="story-start-btn" class="btn" onclick="startStoryCreation()">📝 Créer ma vidéo</button>
+            <div id="story-error-box" class="error-box"></div>
+        </div>
+
+        <div id="story-scenes-panel" class="panel">
+            <div class="panel-title">🎞️ Découpage — Plans &amp; dialogues exacts</div>
+            <div id="story-scenes-content"></div>
+        </div>
+
+        <div id="story-progress-panel" class="panel">
+            <div class="status-line">
+                <span class="dot"></span>
+                <span id="story-global-status-text">Initialisation…</span>
+                <span id="story-cooldown-badge" class="cooldown-badge" style="display:none;"></span>
+            </div>
+            <div id="story-clips-grid" class="clips-grid"></div>
+        </div>
+
+        <div id="story-gallery-panel" class="panel">
+            <div class="panel-title" id="story-gallery-title">✦ Votre vidéo apparaîtra ici ✦</div>
+            <div id="story-video-grid" class="video-grid"></div>
+        </div>
+    </div>
+
+    <div id="log-box" class="log-box"></div>
+
+    <div class="history-section">
+        <div class="history-title">📚 Historique de toutes vos créations</div>
+        <div id="history-container">
+            <div class="history-empty" id="history-empty">Aucune vidéo enregistrée pour le moment.</div>
+            <div class="history-grid" id="history-grid"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ==================================================================
+// CONFIGURATION PARTAGÉE
+// ==================================================================
+const DEFAULT_API_KEY = "";
+const BASE_URL = "https://apihub.agnes-ai.com/v1";
+const RAW_URL  = "https://apihub.agnes-ai.com";
+const MODELS = { text: "agnes-2.0-flash", video: "agnes-video-v2.0" };
+
+const VIDEO_WIDTH  = 768;
+const VIDEO_HEIGHT = 1024;
+const FRAME_RATE   = 24;
+const MAX_CLIPS    = 20;
+
+// Timings — mode Film (nombreux appels texte + clips en série)
+const FILM_FIRST_POLL_DELAY_MS      = 120000;
+const FILM_POLL_INTERVAL_MS         = 30000;
+const FILM_MAX_POLL_ATTEMPTS        = 25;
+const FILM_INTER_CLIP_DELAY_MS      = 20000;
+const FILM_TEXT_INTER_CALL_DELAY_MS = 20000;
+const FILM_PRE_VIDEO_DELAY_MS       = 45000;
+const FILM_POST_BIBLE_DELAY_MS      = 25000;
+
+// Timings — mode Spectrum / Simple (génération vidéo isolée)
+const SPEC_FIRST_POLL_DELAY_MS  = 45000;
+const SPEC_POLL_INTERVAL_MS     = 10000;
+const SPEC_MAX_POLL_ATTEMPTS    = 40;
+const SPEC_INTER_VIDEO_DELAY_MS = 60000;
+const SPEC_PRE_VIDEO_DELAY_MS   = 60000;
+
+// Timings — mode Mon histoire (nombreux plans enchaînés, comme Film)
+const STORY_FIRST_POLL_DELAY_MS      = 120000;
+const STORY_POLL_INTERVAL_MS         = 30000;
+const STORY_MAX_POLL_ATTEMPTS        = 25;
+const STORY_INTER_CLIP_DELAY_MS      = 20000;
+const STORY_TEXT_INTER_CALL_DELAY_MS = 20000;
+const STORY_PRE_VIDEO_DELAY_MS       = 45000;
+const STORY_POST_BIBLE_DELAY_MS      = 25000;
+const STORY_MAX_CLIPS                = 90; // garde-fou (10 min / 6,4s ≈ 94)
+
+// Backoff 429 / réseau — la vidéo (tier gratuit très strict) a un backoff
+// nettement plus long et plus de tentatives que le texte.
+const RATE_LIMIT_BACKOFF_SEC_TEXT  = [5, 10, 15, 20, 30, 45, 60];
+const MAX_RATE_LIMIT_RETRIES_TEXT  = 7;
+const RATE_LIMIT_BACKOFF_SEC_VIDEO = [30, 60, 90, 120, 180, 240, 300, 360, 420, 480];
+const MAX_RATE_LIMIT_RETRIES_VIDEO = 10;
+const NETWORK_ERROR_BACKOFF_SEC = [5, 10, 15, 20, 30, 45, 60];
+const MAX_NETWORK_RETRIES      = 7;
+
+// ==================================================================
+// UTILS PARTAGÉS
+// ==================================================================
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function esc(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c => (
+        {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]
+    ));
+}
+function log(msg, cls="") {
+    const el = document.getElementById("log-box");
+    el.classList.add("visible");
+    const d = document.createElement("div");
+    d.className = cls;
+    d.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    el.appendChild(d);
+    el.scrollTop = el.scrollHeight;
+}
+function setStatus(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+}
+function showCooldown(id, sec) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (sec > 0) { el.textContent = `⏸ ${sec}s`; el.style.display = "inline-block"; }
+    else { el.style.display = "none"; }
+}
+
+function getApiKey() {
+    return (localStorage.getItem("agnes_api_key") || "").trim() || DEFAULT_API_KEY;
+}
+function saveApiKey() {
+    const v = document.getElementById("api-key-input").value.trim();
+    if (!v) { alert("Clé vide."); return; }
+    localStorage.setItem("agnes_api_key", v);
+    log("Clé API sauvegardée (partagée par les 4 modes).", "ok");
+}
+function apiHeaders() {
+    return { "Authorization": `Bearer ${getApiKey()}`, "Content-Type": "application/json" };
+}
+
+// ==================================================================
+// TABS
+// ==================================================================
+function switchTab(name) {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+    document.querySelectorAll(".tab-content").forEach(c => c.classList.toggle("active", c.id === "tab-" + name));
+}
+
+// ==================================================================
+// QUOTA TRACKER (partagé — une seule clé API, une seule vraie limite)
+// ==================================================================
+const QUOTA_LIMITS = { text: 20, video: 1 };
+const WINDOW_MS = 60000;
+const quotaTracker = {
+    text: [], video: [],
+    record(type) { this[type].push(Date.now()); this.cleanup(); this.render(); },
+    cleanup() {
+        const cutoff = Date.now() - WINDOW_MS;
+        for (const t of ['text','video']) this[t] = this[t].filter(x => x > cutoff);
+    },
+    canProceed(type) { this.cleanup(); return this[type].length < QUOTA_LIMITS[type]; },
+    waitTime(type) {
+        this.cleanup();
+        if (this[type].length < QUOTA_LIMITS[type]) return 0;
+        return Math.max(0, Math.ceil((this[type][0] + WINDOW_MS - Date.now()) / 1000));
+    },
+    render() {
+        const renderItem = (type) => {
+            const el = document.getElementById(`quota-${type}`);
+            if (!el) return;
+            const count = this[type].length;
+            const limit = QUOTA_LIMITS[type];
+            el.textContent = `${count}/${limit}`;
+            el.className = 'value ' + (count >= limit ? 'danger' : count >= limit - 1 ? 'warn' : 'ok');
+        };
+        renderItem('text'); renderItem('video');
+    }
+};
+setInterval(() => quotaTracker.render(), 1000);
+
+// ==================================================================
+// LIMITEUR ADAPTATIF VIDÉO (partagé par les 4 modes)
+// Le tier gratuit d'Agnès AI impose une vraie limite vidéo souvent bien
+// plus stricte que ce qu'on peut deviner. Plutôt que de la deviner une
+// fois pour toutes, on démarre prudent et on APPREND en temps réel :
+// chaque 429 reçu sur un appel vidéo augmente automatiquement le délai
+// minimum entre deux créations de vidéo pour le reste de la session.
+// ==================================================================
+const videoRateLimiter = {
+    minIntervalMs: 90000,      // délai de départ entre 2 créations vidéo (90s)
+    maxIntervalMs: 900000,     // plafond de sécurité (15 min)
+    lastCallAt: 0,
+    consecutive429: 0,
+    async waitTurn(countdownFn) {
+        const elapsed = Date.now() - this.lastCallAt;
+        const wait = this.minIntervalMs - elapsed;
+        if (wait > 500) {
+            const waitSec = Math.ceil(wait / 1000);
+            log(`⏸ Espacement vidéo (tier gratuit) : ${(this.minIntervalMs/1000).toFixed(0)}s entre 2 vidéos — attente ${waitSec}s…`, "warn");
+            await countdownFn(waitSec, "⏸ Délai vidéo (tier gratuit)");
+        }
+        this.lastCallAt = Date.now();
+    },
+    on429(retryAfterSec) {
+        this.consecutive429++;
+        const learned = retryAfterSec ? retryAfterSec * 1000 : this.minIntervalMs * 1.6;
+        this.minIntervalMs = Math.min(this.maxIntervalMs, Math.round(Math.max(this.minIntervalMs, learned)));
+        log(`⚠️ Rate limit vidéo détecté — délai minimum entre vidéos porté à ${(this.minIntervalMs/1000).toFixed(0)}s pour la suite.`, "warn");
+    },
+    onSuccess() { this.consecutive429 = 0; }
+};
+
+// ==================================================================
+// FACTORY : countdown / waitForQuota / apiFetch par module
+// ==================================================================
+function makeCountdown(statusId, cooldownId, isRunningGetter) {
+    return async function countdown(seconds, label) {
+        for (let s = seconds; s > 0; s--) {
+            if (!isRunningGetter()) throw new Error("Annulé");
+            setStatus(statusId, `${label} (${s}s)`);
+            showCooldown(cooldownId, s);
+            await sleep(1000);
+        }
+        showCooldown(cooldownId, 0);
+    };
+}
+function makeWaitForQuota(countdownFn) {
+    return async function waitForQuota(type, label) {
+        while (!quotaTracker.canProceed(type)) {
+            const wait = quotaTracker.waitTime(type);
+            if (wait <= 0) break;
+            log(`⏸ Quota ${type} saturé. Attente ${wait}s…`, "warn");
+            await countdownFn(wait, label || `⏸ Quota ${type}`);
+        }
+    };
+}
+function makeApiFetch(countdownFn, waitForQuotaFn) {
+    return async function apiFetch(url, options = {}, label = "API", type = null) {
+        let rateAttempt = 0, netAttempt = 0;
+        if (type) await waitForQuotaFn(type, `⏸ Quota ${type}`);
+        if (type === "video") await videoRateLimiter.waitTurn(countdownFn);
+        const backoffArr = type === "video" ? RATE_LIMIT_BACKOFF_SEC_VIDEO : RATE_LIMIT_BACKOFF_SEC_TEXT;
+        const maxRetries  = type === "video" ? MAX_RATE_LIMIT_RETRIES_VIDEO : MAX_RATE_LIMIT_RETRIES_TEXT;
+        while (true) {
+            let res;
+            try {
+                res = await fetch(url, options);
+            } catch (netErr) {
+                if (netAttempt >= MAX_NETWORK_RETRIES) throw new Error(`Erreur réseau : ${netErr.message}`);
+                const waitSec = NETWORK_ERROR_BACKOFF_SEC[netAttempt] || 60;
+                log(`⚠️ ${label} : erreur réseau. Retry ${netAttempt+1}/${MAX_NETWORK_RETRIES} dans ${waitSec}s…`, "warn");
+                await countdownFn(waitSec, "🔌 Erreur réseau");
+                netAttempt++; continue;
+            }
+            netAttempt = 0;
+            if (res.status !== 429) {
+                if (type === "video") videoRateLimiter.onSuccess();
+                if (type && res.ok) quotaTracker.record(type);
+                return res;
+            }
+            const retryAfterRaw = res.headers ? res.headers.get("Retry-After") : null;
+            let retryAfterSec = null;
+            if (retryAfterRaw) {
+                const asNumber = parseFloat(retryAfterRaw);
+                if (!isNaN(asNumber)) retryAfterSec = asNumber;
+                else {
+                    const asDate = Date.parse(retryAfterRaw);
+                    if (!isNaN(asDate)) retryAfterSec = Math.max(0, Math.round((asDate - Date.now()) / 1000));
+                }
+            }
+            if (type === "video") videoRateLimiter.on429(retryAfterSec);
+            if (rateAttempt >= maxRetries) return res;
+            const waitSec = retryAfterSec != null ? Math.max(5, retryAfterSec) : (backoffArr[rateAttempt] || backoffArr[backoffArr.length - 1]);
+            log(`⚠️ ${label} : RATE LIMIT 429${retryAfterRaw ? ` (Retry-After: ${retryAfterRaw})` : ""}. Attente ${waitSec}s (${rateAttempt+1}/${maxRetries})…`, "warn");
+            await countdownFn(waitSec, "⏸ Rate limit");
+            rateAttempt++;
+        }
+    };
+}
+
+// ==================================================================
+// INDEXEDDB (partagée entre les 4 modes)
+// ==================================================================
+const DB_NAME = "CineIASuiteDB";
+const DB_VERSION = 1;
+const STORE = "videos";
+let db = null;
+
+function openDB() {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onerror = () => reject(req.error);
+        req.onsuccess = () => { db = req.result; resolve(db); };
+        req.onupgradeneeded = (e) => {
+            const d = e.target.result;
+            if (!d.objectStoreNames.contains(STORE)) {
+                const s = d.createObjectStore(STORE, { keyPath:"id", autoIncrement:true });
+                s.createIndex("timestamp", "timestamp", { unique:false });
+            }
+        };
+    });
+}
+function saveVideoToDB(data) {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE, "readwrite");
+        const req = tx.objectStore(STORE).add(data);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+function getAllVideosFromDB() {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE, "readonly");
+        const req = tx.objectStore(STORE).getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+    });
+}
+const MODE_ICON = { film:"🎬", spectrum:"🖼️", simple:"⚡", story:"📝" };
+async function loadHistory() {
+    try {
+        const videos = await getAllVideosFromDB();
+        const emptyEl = document.getElementById("history-empty");
+        const gridEl = document.getElementById("history-grid");
+        if (!videos.length) { emptyEl.style.display = "block"; gridEl.innerHTML = ""; return; }
+        emptyEl.style.display = "none";
+        videos.sort((a, b) => b.timestamp - a.timestamp);
+        gridEl.innerHTML = videos.map(v => `
+            <div class="history-item">
+                <video controls preload="metadata" muted playsinline>
+                    <source src="${v.url}" type="video/mp4">
+                </video>
+                <div class="history-meta">
+                    <span class="history-mode-badge">${MODE_ICON[v.mode] || "🎞️"} ${esc(v.mode || "")}</span><br>
+                    <span class="style">${esc(v.style || "")}</span><br>
+                    ${esc(v.filmTitle || v.sceneTitle || "")}<br>
+                    ${new Date(v.timestamp).toLocaleString()}
+                </div>
+            </div>
+        `).join("");
+    } catch (e) { console.error("Historique :", e); }
+}
+
+const FILM_STYLES = {
+    "manga":         { name:"Manga / Anime",      icon:"📖", enhance:"Japanese anime style, cel-shaded 2D animation, crisp ink outlines, expressive eyes, dynamic action lines, vibrant colors, Studio Ghibli meets modern shonen aesthetic" },
+    "simpson":       { name:"Les Simpson",        icon:"🍩", enhance:"The Simpsons cartoon style, yellow-skinned characters with four fingers, thick black outlines, flat saturated colors, satirical American animated sitcom aesthetic" },
+    "cinema-auteur": { name:"Cinéma d'auteur",    icon:"🎞️", enhance:"Art house cinema style, contemplative long take, natural available light, 16mm film grain, minimalist composition, melancholic atmosphere, slow cinema" },
+    "noir":          { name:"Film noir",          icon:"🖤", enhance:"Classic film noir, high contrast chiaroscuro lighting, deep shadows, venetian blind shadows, 1940s detective aesthetic, black and white cinematography" },
+    "vangogh":       { name:"Van Gogh",           icon:"🌻", enhance:"Vincent van Gogh oil painting style, swirling impasto brushstrokes, thick textured paint, vibrant complementary colors, Starry Night energy, post-impressionist" },
+    "watercolor":    { name:"Aquarelle onirique", icon:"🎨", enhance:"Dreamy watercolor painting, soft bleeding edges, translucent washes, wet-on-wet technique, delicate color gradients, ethereal atmosphere, paper texture" },
+    "oil-painting":  { name:"Peinture à l'huile", icon:"🖼️", enhance:"Renaissance oil painting, sfumato technique, dramatic chiaroscuro, rich earth tones, museum quality, old master technique, Caravaggio lighting, textured canvas" },
+    "impressionism": { name:"Impressionnisme",    icon:"🌸", enhance:"French Impressionist painting, visible brushstrokes, emphasis on light and its changing qualities, Monet and Renoir influence, soft pastel palette" },
+    "expressionism": { name:"Expressionnisme",    icon:"🎭", enhance:"German Expressionism, distorted reality, agitated brushwork, intense emotional colors, jagged lines, psychological intensity, raw emotional power" },
+    "surrealism":    { name:"Surréalisme",        icon:"🌀", enhance:"Surrealist dreamscape, impossible juxtapositions, melting forms, Salvador Dali and René Magritte influence, symbolic imagery, uncanny atmosphere" },
+    "baroque":       { name:"Baroque",            icon:"👑", enhance:"Baroque painting style, dramatic theatrical lighting, rich ornate details, deep saturated colors, gold accents, Caravaggio tenebrism" },
+    "cyberpunk":     { name:"Cyberpunk",          icon:"🌃", enhance:"Cyberpunk futuristic aesthetic, neon pink and cyan lighting, rain-slicked streets, holographic advertisements, Blade Runner atmosphere, chromatic aberration" },
+    "synthwave":     { name:"Synthwave",          icon:"🌆", enhance:"Synthwave retro-futurism, neon grid, purple and magenta gradient sky, chrome text, 1980s retro aesthetic, VHS scan lines, outrun style" },
+    "steampunk":     { name:"Steampunk",          icon:"⚙️", enhance:"Steampunk Victorian aesthetic, brass and copper machinery, gears and cogs, steam-powered contraptions, leather and wood, sepia and bronze tones" },
+    "art-deco":      { name:"Art Déco",           icon:"🏛️", enhance:"Art Deco style, geometric patterns, symmetrical composition, gold and black palette, Gatsby-era opulence, streamlined forms, 1920s modernist elegance" },
+    "bauhaus":       { name:"Bauhaus",            icon:"⬛", enhance:"Bauhaus design, primary colors, geometric abstraction, functional minimalism, clean lines, asymmetric balance, graphic design purity" },
+    "minimalism":    { name:"Minimalisme",        icon:"▫️", enhance:"Minimalist aesthetic, negative space, monochromatic palette, essential forms only, quiet contemplation, meditative stillness" },
+    "brutalism":     { name:"Brutalism",          icon:"🏗️", enhance:"Brutalist architecture, raw concrete textures, monumental geometric forms, stark shadows, utopian-dystopian atmosphere" },
+    "glitch-art":    { name:"Glitch Art",         icon:"📺", enhance:"Glitch art aesthetic, datamoshing, pixel sorting, RGB channel splitting, VHS tracking errors, corrupted digital signals" },
+    "vaporwave":     { name:"Vaporwave",          icon:"🌴", enhance:"Vaporwave aesthetic, nostalgic 90s imagery, pastel gradient, Greek statues, Windows 95 UI elements, ambient consumerism, VHS quality" },
+    "claymation":    { name:"Claymation",         icon:"🧱", enhance:"Claymation stop-motion animation, plasticine texture, fingerprint details on clay, tactile handmade quality, Aardman Studios style" },
+    "pixel-art":     { name:"Pixel Art",          icon:"👾", enhance:"Pixel art animation, 16-bit retro video game aesthetic, limited color palette, dithering patterns, sprite animation, SNES era" },
+    "documentary":   { name:"Documentaire",       icon:"📹", enhance:"Documentary cinematography, handheld camera, natural light, observational style, raw authenticity, interview framing, fly-on-the-wall" }
+};
+function populateStyleSelect(selectId, defaultKey) {
+    const el = document.getElementById(selectId);
+    el.innerHTML = Object.entries(FILM_STYLES).map(([key, s]) =>
+        `<option value="${key}" ${key === defaultKey ? "selected" : ""}>${s.icon} ${esc(s.name)}</option>`
+    ).join("");
+}
+
+// ==================================================================
+// STYLES — SPECTRUM (liste multi-choix, 30 styles)
+// ==================================================================
+const SPECTRUM_STYLES = [
+    { id:"anime", name:"Anime Cinématique", icon:"📖", category:"animation",
+      prompt:"Japanese anime style, cinematic cel-shaded animation, crisp ink outlines, expressive eyes, dynamic action lines, vibrant saturated colors, Studio Ghibli meets modern shonen aesthetic, epic dramatic lighting" },
+    { id:"ghibli", name:"Ghibli Onirique", icon:"🌿", category:"animation",
+      prompt:"Hand-painted watercolor textures, soft midday light, lush green landscapes, cel-shaded characters, painterly cumulus sky, gentle breeze through grass, muted earth tones, nostalgic magical realism, dreamlike atmosphere" },
+    { id:"arcane", name:"Arcane (peinture animée)", icon:"🎨", category:"animation",
+      prompt:"Painterly 2D animation with visible brushstrokes, rich saturated colors, dramatic lighting, cinematic composition, stylized character design, Arcane series aesthetic, oil-paint-meets-3D rendering" },
+    { id:"manga-nb", name:"Manga Noir & Blanc", icon:"🖤", category:"animation",
+      prompt:"Black and white manga style, stark ink outlines, dramatic screentones, high contrast chiaroscuro, dynamic action lines, Japanese comic aesthetic, Tite Kubo meets Junji Ito mood" },
+    { id:"cyberpunk-anime", name:"Cyberpunk Anime", icon:"🌃", category:"animation",
+      prompt:"1980s cyberpunk anime, neon-drenched Tokyo, rain-slicked streets, holographic advertisements, detailed mechanical design, Akira Katsuhiro Otomo style, chromatic aberration, lens flares" },
+    { id:"cartoon", name:"Cartoon Explosif", icon:"🖍️", category:"animation",
+      prompt:"Bright colorful 2D cartoon, bold outlines, exaggerated expressions, flat vibrant colors, playful chaotic energy, classic Saturday-morning animation style, slapstick visual comedy" },
+    { id:"pixel", name:"Pixel Art Rétro", icon:"👾", category:"animation",
+      prompt:"Pixel art animation, 16-bit retro video game aesthetic, limited color palette, dithering patterns, sprite animation, SNES and Genesis era, isometric perspective, CRT scanline glow" },
+    { id:"wes", name:"Wes Anderson Symétrique", icon:"🎩", category:"cinema",
+      prompt:"Perfectly symmetrical composition, planimetric staging, flat frontal framing, pastel color palette (soft pink, mint green, pale yellow), meticulous production design, slow dolly-in, flat 40mm telephoto lens, centered subject, whimsical precision, deadpan framing, dollhouse aesthetic" },
+    { id:"kubrick", name:"Kubrick Géométrique", icon:"🎥", category:"cinema",
+      prompt:"One-point perspective, symmetrical centering, slow zoom, wide-angle interiors, geometric order, formal ritualized blocking, cool observational distance, restrained exact color palette, unsettling calm, clinical precision" },
+    { id:"villeneuve", name:"Villeneuve Monumental", icon:"🏜️", category:"cinema",
+      prompt:"Monumental scale, monochromatic desaturated palette blocks, atmospheric haze, long lenses, negative-space blocking, brutalist architecture, minimal contrast, golden sand tones with cool blue shadows, epic dust storms" },
+    { id:"refn", name:"Refn Neon Hypnotique", icon:"🌆", category:"cinema",
+      prompt:"Neon-soaked magenta and cyan palette, hypnotic slow motion, minimalist dialogue, symmetrical compositions, synthwave aesthetic, brutal elegance, shallow depth of field, electric atmosphere" },
+    { id:"noir", name:"Film Noir Ombre & Lumière", icon:"🖤", category:"cinema",
+      prompt:"Classic film noir, high contrast chiaroscuro lighting, deep shadows, venetian blind shadows, 1940s detective aesthetic, black and white cinematography, German Expressionism influence, cigarette smoke curling in light beams" },
+    { id:"chaplin", name:"Chaplin Burlesque", icon:"🎩", category:"cinema",
+      prompt:"Classic silent film era, black and white with subtle sepia tint, 1920s-1930s slapstick, Tramp persona, bowler hat, toothbrush mustache, oversized baggy trousers, comically large shoes, cane, theatrical pantomime, 16mm film grain, flickering projection, vaudeville energy" },
+    { id:"vangogh", name:"Van Gogh Tourbillon", icon:"🌻", category:"painterly",
+      prompt:"Vincent van Gogh oil painting style, swirling impasto brushstrokes, thick textured paint, vibrant complementary colors, expressive movement, post-impressionist energy, Starry Night dynamic swirls" },
+    { id:"dali", name:"Dali Surréaliste", icon:"🌀", category:"painterly",
+      prompt:"Salvador Dali surrealist style, melting clocks, impossible dreamscapes, meticulous rendering of fantastical elements, uncanny atmosphere, symbolic imagery, hyperrealistic absurdity" },
+    { id:"monet", name:"Monet Impressionniste", icon:"🌸", category:"painterly",
+      prompt:"Claude Monet impressionist style, soft dappled light, visible brushstrokes, water lilies atmosphere, pastel palette, en plein air feeling, shimmering atmospheric light" },
+    { id:"klimt", name:"Klimt Doré", icon:"✨", category:"painterly",
+      prompt:"Gustav Klimt style, gold leaf ornamentation, decorative patterns, sensuous curves, Byzantine mosaic influence, rich jewel tones, opulent golden textures" },
+    { id:"rembrandt", name:"Rembrandt Ténébreux", icon:"🕯️", category:"painterly",
+      prompt:"Rembrandt oil painting, dramatic chiaroscuro, warm candlelight, deep shadows, rich earth tones, Baroque master technique, textured canvas, single light source illuminating the subject" },
+    { id:"hokusai", name:"Hokusai Estampe", icon:"🌊", category:"painterly",
+      prompt:"Katsushika Hokusai ukiyo-e style, woodblock print aesthetic, flat colors, bold outlines, wave patterns, Japanese Edo period art, The Great Wave dynamic energy" },
+    { id:"cyberpunk", name:"Cyberpunk Pluie Néon", icon:"🌃", category:"genre",
+      prompt:"Cyberpunk futuristic aesthetic, neon pink and cyan lighting, rain-slicked streets, holographic advertisements, Blade Runner atmosphere, chromatic aberration, lens flares, wet reflective surfaces" },
+    { id:"scifi", name:"Science-Fiction Cosmique", icon:"🚀", category:"genre",
+      prompt:"Epic science-fiction cinematic style, monumental scale, atmospheric haze, vast negative space, futuristic architecture, cold desaturated palette with warm accent lighting, cosmic dust particles, interstellar atmosphere" },
+    { id:"steampunk", name:"Steampunk Mécanique", icon:"⚙️", category:"genre",
+      prompt:"Steampunk Victorian aesthetic, brass and copper machinery, gears and cogs, steam-powered contraptions, leather and wood, sepia and bronze tones, steam clouds and mechanical rhythm" },
+    { id:"horreur", name:"Horreur Psychologique", icon:"👻", category:"genre",
+      prompt:"Horror cinematic style, deep shadows, unsettling stillness, desaturated palette, sudden contrast, psychological tension, slow creeping camera movement, unsettling atmosphere" },
+    { id:"vaporwave", name:"Vaporwave Nostalgique", icon:"🌴", category:"genre",
+      prompt:"Vaporwave aesthetic, nostalgic 90s imagery, pastel gradient, Greek statues, Windows 95 UI elements, ambient consumerism, VHS quality, retro-futurism, mallsoft atmosphere" },
+    { id:"glitch", name:"Glitch Art Digital", icon:"📺", category:"experimental",
+      prompt:"Glitch art aesthetic, datamoshing, pixel sorting, RGB channel splitting, VHS tracking errors, corrupted digital signals, circuit bent visual noise, digital decay beauty, chromatic aberration" },
+    { id:"claymation", name:"Claymation Tactile", icon:"🧱", category:"experimental",
+      prompt:"Claymation stop-motion animation, plasticine texture, fingerprint details on clay, tactile handmade quality, Aardman Studios style, warm practical lighting, miniature set" },
+    { id:"sketch", name:"Croquis Animé", icon:"✏️", category:"experimental",
+      prompt:"Hand-drawn pencil sketch animation, visible sketch lines, cross-hatching, paper texture, graphite shading, animation that retains the rawness of the drawing process" },
+    { id:"collage", name:"Collage Découpé", icon:"✂️", category:"experimental",
+      prompt:"Mixed-media collage animation, torn paper edges, magazine cutouts, layered textures, stop-motion paper aesthetic, Terry Gilliam Monty Python style, absurd juxtapositions" },
+    { id:"liquid", name:"Liquide Abstrait", icon:"💧", category:"experimental",
+      prompt:"Liquid abstract animation, flowing paint in water, ink diffusion, fluid dynamics, macro photography aesthetic, organic shapes morphing, iridescent oil slick colors" }
+];
+const RANDOM_ACTIONS = [
+    "The subject bursts into an explosive, wildly dynamic action sequence, defying physics",
+    "A mesmerizing transformation unfolds as the subject morphs and evolves before our eyes",
+    "The subject performs an intense, hypnotic ritual, every gesture deliberate and powerful",
+    "Reality bends and warps around the subject as they move with otherworldly grace",
+    "The subject launches into a spectacular display of acrobatic prowess and raw energy",
+    "A surreal, dreamlike sequence where the environment itself responds to the subject's movements",
+    "The subject emerges dramatically, radiating power and presence that fills the entire frame",
+    "Time seems to slow as the subject performs a series of impossibly elegant movements",
+    "The subject explodes into a flurry of chaotic yet strangely beautiful motion",
+    "A powerful, ritualistic sequence of movements — ancient, primal, and transcendent",
+    "The subject walks with quiet, magnetic intensity, their presence reshaping the world around them",
+    "A dazzling display of technical mastery — every movement precise, explosive, breathtaking",
+    "The subject dances with wild abandon, spinning and twisting with impossible athleticism",
+    "A dramatic reveal as the subject turns toward the camera, eyes blazing with intensity",
+    "The subject and environment merge — wind, light, and motion combining into a single visual poem"
+];
+const RANDOM_LIGHTING = [
+    "dramatic golden hour backlight creating a luminous halo of dust and light",
+    "intense neon-soaked lighting with vibrant pink, cyan, and electric purple reflections",
+    "warm candlelight flickering against deep, dramatic shadows",
+    "bioluminescent glow emanating from the subject themselves, casting eerie light on surroundings",
+    "high-contrast chiaroscuro — a single beam of light cutting through total darkness",
+    "overcast, moody lighting with muted tones and thick atmospheric haze",
+    "sunlight streaming through a shattered ceiling, casting fractured geometric shadows",
+    "electric blue plasma arcs illuminating the scene from within the subject",
+    "sunset orange and deep violet sky, silhouetting the subject against a burning horizon",
+    "sterile fluorescent white light, clinical and unsettling, casting harsh shadows"
+];
+const RANDOM_CAMERA = [
+    "slow dolly-in, the camera gliding forward with cinematic smoothness, building tension",
+    "handheld tracking shot, organic and reactive movement that follows the action intimately",
+    "360-degree orbital movement around the subject, revealing every angle of the scene",
+    "low-angle shot looking up at the subject, emphasizing their power and dominance",
+    "extreme close-up on the subject's face, then rapid pull-back to reveal the full scene",
+    "static locked-off camera, allowing the subject's explosive movement to fill the frame",
+    "slow crane shot rising high above the scene, revealing the full scope of the environment",
+    "tracking shot from behind the subject as they move forward into the unknown",
+    "quick handheld zoom-punch into the subject's eyes at the climax of the action",
+    "fluid steadiest tracking shot circling the subject, never breaking visual contact"
+];
+const MOTION_DESC = {
+    "excentrique": "completely eccentric and unpredictable movements, absurd gestures, whimsical body language, joyful chaos, burlesque energy, surprising transitions",
+    "hallucinant": "hallucinatory, surreal, reality-bending movements that defy logic, dreamlike distortions, impossible physics, mind-altering visual spectacle",
+    "spectaculaire": "spectacular explosive motion, dramatic gestures, larger-than-life energy, show-stopping action, visual fireworks",
+    "impressionnant": "impressive, awe-inspiring movement, technically masterful, visually stunning, virtuoso performance",
+    "shaolin": "Shaolin kung-fu movements, flowing katas, martial arts precision, balanced stances, graceful and powerful transitions",
+    "hiphop": "hip-hop dance movements, urban style, body isolations, popping and locking, street dance energy, rhythmic swagger",
+    "robot": "robotic jerky movements, mechanical precision, angular body language, sudden pauses, android-like motion, servo-driven twitches",
+    "ralenti": "slow-motion movement, every micro-gesture visible and amplified, dreamlike pacing, suspended in time",
+    "contemporain": "contemporary dance, fluid abstract gestures, weight shifting, organic transitions, minimalist expressiveness, emotional body language",
+    "cinematique": "cinematic, deliberate motion with dramatic pauses, every gesture feeling intentional and powerful, epic presence"
+};
+
+// ══════════════════════════════════════════════════════════════════
+// ███ MODE 1 — FILM (scénario → plusieurs clips)
+// ══════════════════════════════════════════════════════════════════
+let film = { isRunning:false, bible:null, scenes:[], clips:[] };
+const filmCountdown = makeCountdown("film-global-status-text", "film-cooldown-badge", () => film.isRunning);
+const filmWaitForQuota = makeWaitForQuota(filmCountdown);
+const filmApiFetch = makeApiFetch(filmCountdown, filmWaitForQuota);
+
+function filmShowError(msg) {
+    const el = document.getElementById("film-error-box");
+    el.textContent = msg; el.classList.add("visible");
+}
+function filmClearError() {
+    const el = document.getElementById("film-error-box");
+    el.textContent = ""; el.classList.remove("visible");
+}
+
+async function generateBibleAndScenes(userPrompt, clipCount, styleKey) {
+    const style = FILM_STYLES[styleKey];
+    const act1 = Math.max(1, Math.round(clipCount * 0.25));
+    const act3 = Math.max(1, Math.round(clipCount * 0.25));
+    const act2 = Math.max(1, clipCount - act1 - act3);
+
+    const systemPrompt = `You are an award-winning film director, screenwriter and visual development artist. You are creating a SHORT FILM divided into exactly ${clipCount} sequential video clips. Each clip = ONE continuous shot of about 10 seconds. Together they must feel like ONE coherent short film with a complete narrative arc.
+
+USER'S FILM IDEA:
+"""
+${userPrompt}
+"""
+
+IMPOSED VISUAL STYLE (applies to the entire film, no exceptions): ${style.name}
+STYLE KEYWORDS: ${style.enhance}
+
+═══════════════════════════════════════════════
+YOUR MISSION — BUILD THE FILM BIBLE + THE SCENE BREAKDOWN
+═══════════════════════════════════════════════
+
+The film must have a proper three-act structure:
+- ACT I — Setup: the first ${act1} scenes introduce the world and the characters.
+- ACT II — Development/Conflict: the next ${act2} scenes develop the story, the tension, and the encounters.
+- ACT III — Resolution: the last ${act3} scenes resolve everything and conclude the film.
+
+CRITICAL RULES FOR VISUAL CONSISTENCY (no reference images available):
+1. Every character must have an EXTREMELY DETAILED "appearance" description in English, written ONCE, that will be reused VERBATIM in every video prompt where the character appears. Include: species, head shape, face details, body, exact clothing with colors, textures, distinctive accessories, posture.
+2. The "world" description must also be a single verbose English block reused verbatim.
+3. The "visual_style_anchor" is a short English keyword block reused verbatim at the start of every prompt.
+
+DIALOGUE:
+- Dialogue must be in FRENCH, literary but alive, never vulgar, matching the tone of the user's idea.
+- Keep each dialogue line short (max 25 words).
+- If a scene has no spoken line, write exactly "Aucun dialogue" and set dialogue_speaker to null.
+
+OUTPUT — a single valid JSON object, no commentary, no markdown fences:
+{
+  "bible": {
+    "film_title": "string (in French)",
+    "logline": "string (one sentence, in French)",
+    "tone": "string (in French)",
+    "color_palette": "string (in English)",
+    "characters": [
+      { "name":"string", "role":"string (in French)", "appearance":"Extremely detailed English description, 40–80 words, reused verbatim." }
+    ],
+    "world": "Detailed English description, 30–60 words, reused verbatim.",
+    "visual_style_anchor": "Short English keyword block, reused verbatim."
+  },
+  "scenes": [
+    {
+      "scene_number": 1,
+      "act": 1,
+      "title": "string (in French)",
+      "characters_present": ["name1"],
+      "location": "string",
+      "narrative_beat": "string (in French)",
+      "dialogue": "string (in French) or 'Aucun dialogue'",
+      "dialogue_speaker": "name or null",
+      "shot_type": "e.g. 'wide establishing shot'",
+      "camera_movement": "e.g. 'slow dolly in'",
+      "lighting": "string (in English)",
+      "mood": "string (in French)",
+      "sound_design": "string (in English)"
+    }
+  ]
+}
+
+Return EXACTLY ${clipCount} scenes. Every scene must advance the story. No filler.`;
+
+    log("Phase 1 — Génération de la bible du film et du découpage…", "hl");
+    setStatus("film-global-status-text", "L'agent écrit la bible du film et le découpage…");
+
+    const res = await filmApiFetch(`${BASE_URL}/chat/completions`, {
+        method: "POST", headers: apiHeaders(),
+        body: JSON.stringify({
+            model: MODELS.text,
+            messages: [
+                { role:"system", content:systemPrompt },
+                { role:"user", content:`Voici mon idée de film : ${userPrompt}` }
+            ],
+            temperature: 0.85,
+            max_tokens: 8000
+        })
+    }, "Texte · Bible", "text");
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
+
+    let content = data.choices?.[0]?.message?.content || "";
+    content = content.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+    const start = content.indexOf("{"); const end = content.lastIndexOf("}");
+    if (start >= 0 && end > start) content = content.slice(start, end + 1);
+
+    let parsed;
+    try { parsed = JSON.parse(content); }
+    catch (e) {
+        log("JSON brut reçu : " + content.slice(0, 600), "err");
+        throw new Error("Le scénario n'est pas un JSON valide.");
+    }
+    if (!parsed.bible || !Array.isArray(parsed.scenes)) throw new Error("Structure de scénario invalide.");
+
+    parsed.scenes = parsed.scenes.slice(0, clipCount);
+    while (parsed.scenes.length < clipCount) {
+        const n = parsed.scenes.length + 1;
+        parsed.scenes.push({
+            scene_number:n, act: n <= act1 ? 1 : (n > clipCount - act3 ? 3 : 2),
+            title:`Scène ${n}`, characters_present:[], location:"",
+            narrative_beat:"Scène de transition.", dialogue:"Aucun dialogue",
+            dialogue_speaker:null, shot_type:"wide shot",
+            camera_movement:"slow pan", lighting:"natural light",
+            mood:"contemplatif", sound_design:"ambient textures, soft acoustic"
+        });
+    }
+    log(`Bible + ${parsed.scenes.length} scènes générées.`, "ok");
+    return parsed;
+}
+
+async function generateVideoPrompts(bible, scenes, styleKey) {
+    const bibleBlock = `
+FILM TITLE: ${bible.film_title}
+TONE: ${bible.tone}
+COLOR PALETTE: ${bible.color_palette}
+
+VISUAL STYLE ANCHOR (copy verbatim at start of every prompt):
+"${bible.visual_style_anchor}"
+
+WORLD DESCRIPTION (copy verbatim in every prompt):
+"${bible.world}"
+
+CHARACTERS — copy exact "appearance" string for each character present:
+${bible.characters.map(c => `- ${c.name} (${c.role}): ${c.appearance}`).join("\n")}
+`;
+
+    const BATCH = 5;
+    const allPrompts = [];
+
+    for (let b = 0; b < scenes.length; b += BATCH) {
+        if (b > 0) {
+            log(`Pause inter-batches de ${FILM_TEXT_INTER_CALL_DELAY_MS / 1000}s…`, "warn");
+            await filmCountdown(Math.floor(FILM_TEXT_INTER_CALL_DELAY_MS / 1000), "⏸ Pause anti rate-limit");
+        }
+
+        const slice = scenes.slice(b, b + BATCH);
+        const scenesBlock = slice.map(s => {
+            const chars = (s.characters_present || []).join(", ") || "(aucun personnage nommé)";
+            return `
+SCENE ${s.scene_number}:
+- Title: ${s.title}
+- Characters present: ${chars}
+- Location: ${s.location}
+- Narrative beat: ${s.narrative_beat}
+- Shot type: ${s.shot_type}
+- Camera: ${s.camera_movement}
+- Lighting: ${s.lighting}
+- Mood: ${s.mood}
+- Sound design: ${s.sound_design}
+- Dialogue (reference only, NOT rendered as text): ${s.dialogue}
+`;
+        }).join("\n");
+
+        const sys = `You are a senior prompt engineer for a text-to-video AI model. You receive a FILM BIBLE and a batch of SCENES. For each scene, produce ONE English video prompt.
+
+THE ABSOLUTE RULE FOR CONSISTENCY (no reference images):
+Every video prompt MUST follow this skeleton in this exact order:
+[1. VISUAL STYLE ANCHOR] (same exact words every time)
+[2. WORLD] (same exact words every time)
+[3. CHARACTERS PRESENT] — for each named character, copy their "appearance" VERBATIM preceded by name.
+[4. LOCATION of this scene]
+[5. ACTION] — what happens, present tense, vivid, 1–2 sentences.
+[6. SHOT] — shot_type + camera_movement.
+[7. LIGHTING] — specific.
+[8. MOOD & SOUND] — brief emotional + ambient audio cue (no dialogue description).
+[9. Tail] — "cinematic, 9:16 vertical, 24fps, coherent continuity with previous scenes, same character designs".
+
+RULES:
+- Output a single valid JSON object: {"prompts":[{"scene_number":1,"prompt":"..."}, ...]}
+- No markdown fences, no commentary.
+- Every prompt under 900 characters.
+- Repeat style anchor and world VERBATIM every time.
+- Never describe written text or subtitles in the prompt.
+
+FILM BIBLE:
+${bibleBlock}
+`;
+
+        log(`Phase 2 — Prompts vidéo (${b + 1}–${Math.min(b + BATCH, scenes.length)} / ${scenes.length})…`, "hl");
+        setStatus("film-global-status-text", `L'agent rédige les prompts vidéo… (${b + 1}–${Math.min(b + BATCH, scenes.length)} / ${scenes.length})`);
+
+        const res = await filmApiFetch(`${BASE_URL}/chat/completions`, {
+            method: "POST", headers: apiHeaders(),
+            body: JSON.stringify({
+                model: MODELS.text,
+                messages: [
+                    { role:"system", content:sys },
+                    { role:"user", content:`SCENES TO PROMPT:\n${scenesBlock}\n\nReturn the JSON with exactly ${slice.length} prompts, one per scene, in order.` }
+                ],
+                temperature: 0.7,
+                max_tokens: 4000
+            })
+        }, `Texte · Prompts batch ${Math.floor(b/BATCH) + 1}`, "text");
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
+
+        let content = data.choices?.[0]?.message?.content || "";
+        content = content.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+        const s = content.indexOf("{"); const e = content.lastIndexOf("}");
+        if (s >= 0 && e > s) content = content.slice(s, e + 1);
+
+        let parsed;
+        try { parsed = JSON.parse(content); }
+        catch (err) {
+            log("Batch prompts — JSON invalide, fallback local.", "warn");
+            parsed = { prompts: [] };
+        }
+        const arr = Array.isArray(parsed.prompts) ? parsed.prompts : [];
+
+        for (let i = 0; i < slice.length; i++) {
+            const p = arr[i];
+            let promptText = (p && (p.prompt || p.text)) ? String(p.prompt || p.text) : null;
+            if (!promptText || promptText.length < 40) {
+                const sc = slice[i];
+                const chars = (sc.characters_present || []).map(n => {
+                    const c = bible.characters.find(x => x.name === n);
+                    return c ? `${c.name}: ${c.appearance}` : n;
+                }).join(" ");
+                promptText =
+                    `${bible.visual_style_anchor} ${bible.world} ${chars} ` +
+                    `Location: ${sc.location}. Action: ${sc.narrative_beat}. ` +
+                    `Shot: ${sc.shot_type}, ${sc.camera_movement}. Lighting: ${sc.lighting}. ` +
+                    `Mood: ${sc.mood}. Audio: ${sc.sound_design}. ` +
+                    `cinematic, 9:16 vertical, 24fps, consistent character design.`;
+            }
+            allPrompts.push({ scene_number: slice[i].scene_number, prompt: promptText });
+        }
+    }
+    log(`Phase 2 — ${allPrompts.length} prompts vidéo prêts.`, "ok");
+    return allPrompts;
+}
+
+async function filmCreateVideoTask(prompt, enableAudio) {
+    const body = {
+        model: MODELS.video, prompt: prompt,
+        width: VIDEO_WIDTH, height: VIDEO_HEIGHT, num_frames: 241, frame_rate: FRAME_RATE
+    };
+    if (enableAudio) {
+        body.generate_audio = true;
+        body.audio_style = "acoustic experimental intellectual ambient, soft textures, no drums";
+    }
+    const res = await filmApiFetch(`${BASE_URL}/videos`, {
+        method:"POST", headers: apiHeaders(), body: JSON.stringify(body)
+    }, "Vidéo · Création", "video");
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
+    const videoId = data.video_id || data.id || data.task_id;
+    if (!videoId) throw new Error("Pas de video_id retourné.");
+    return videoId;
+}
+
+async function filmPollUntilComplete(videoId, clipIndex) {
+    let remaining = Math.floor(FILM_FIRST_POLL_DELAY_MS / 1000);
+    while (remaining > 0 && film.isRunning) {
+        updateClip(clipIndex, { status:"processing", timerDisplay:`${remaining}s`, statusText:"Attente initiale (2 min)" });
+        await sleep(1000);
+        remaining--;
+    }
+    if (!film.isRunning) throw new Error("Annulé");
+
+    for (let attempt = 0; attempt < FILM_MAX_POLL_ATTEMPTS; attempt++) {
+        if (!film.isRunning) throw new Error("Annulé");
+        if (attempt > 0) {
+            let r = Math.floor(FILM_POLL_INTERVAL_MS / 1000);
+            while (r > 0 && film.isRunning) {
+                updateClip(clipIndex, { timerDisplay:`${r}s`, statusText:`Vérif. ${attempt + 1}` });
+                await sleep(1000);
+                r--;
+            }
+            if (!film.isRunning) throw new Error("Annulé");
+        }
+
+        log(`Clip ${clipIndex + 1} : vérification n°${attempt + 1}…`, "hl");
+        setStatus("film-global-status-text", `Clip ${clipIndex + 1} : vérification ${attempt + 1}…`);
+
+        const url = `${RAW_URL}/agnesapi?video_id=${encodeURIComponent(videoId)}&model_name=${encodeURIComponent(MODELS.video)}`;
+        try {
+            const r = await filmApiFetch(url, { method:"GET", headers: apiHeaders() }, `Vidéo · Poll clip ${clipIndex + 1}`);
+            const d = await r.json();
+            const status = d.status || "unknown";
+            const progress = d.progress ?? 0;
+            log(`Clip ${clipIndex + 1} : statut="${status}", progression=${progress}%`);
+            updateClip(clipIndex, { statusText:`Génération… ${progress}%`, timerDisplay:`${progress}%` });
+
+            if (status === "completed" || status === "succeeded") {
+                const videoUrl = d.metadata?.url || d.url || d.output?.url;
+                if (!videoUrl) throw new Error("Terminé mais pas d'URL.");
+                log(`Clip ${clipIndex + 1} : TERMINÉ !`, "ok");
+                return videoUrl;
+            }
+            if (status === "failed" || status === "error") throw new Error("La génération a échoué.");
+        } catch (err) {
+            if (err.message.includes("échoué") || err.message.includes("URL")) throw err;
+            log(`Clip ${clipIndex + 1} : erreur polling (${err.message}), on réessaie…`, "warn");
+        }
+    }
+    throw new Error("Délai maximal dépassé.");
+}
+
+function renderBible(bible) {
+    const el = document.getElementById("film-bible-content");
+    el.innerHTML = `
+        <div class="bible-title">${esc(bible.film_title || "Sans titre")}</div>
+        <div class="bible-logline">${esc(bible.logline || "")}</div>
+        <div class="bible-section">
+            <div class="bible-section-title">Ton</div>
+            <div class="bible-text">${esc(bible.tone || "")}</div>
+        </div>
+        <div class="bible-section">
+            <div class="bible-section-title">Palette</div>
+            <div class="bible-text">${esc(bible.color_palette || "")}</div>
+        </div>
+        <div class="bible-section">
+            <div class="bible-section-title">Personnages</div>
+            ${(bible.characters || []).map(c => `
+                <div class="character-card">
+                    <div class="character-name">${esc(c.name)}</div>
+                    <div class="character-role">${esc(c.role || "")}</div>
+                    <div class="character-appearance">${esc(c.appearance || "")}</div>
+                </div>
+            `).join("")}
+        </div>
+        <div class="bible-section">
+            <div class="bible-section-title">Monde</div>
+            <div class="bible-text">${esc(bible.world || "")}</div>
+        </div>
+        <div class="bible-section">
+            <div class="bible-section-title">Ancrage stylistique (répété dans chaque prompt)</div>
+            <div class="bible-text">${esc(bible.visual_style_anchor || "")}</div>
+        </div>
+    `;
+    document.getElementById("film-bible-panel").classList.add("visible");
+}
+
+function renderScenes(scenes) {
+    const el = document.getElementById("film-scenes-content");
+    el.innerHTML = scenes.map(s => `
+        <div class="scene-item">
+            <div class="scene-header">
+                <span class="scene-number">Scène ${s.scene_number}</span>
+                <span class="scene-act">Acte ${s.act || "?"}</span>
+            </div>
+            <div class="scene-title">${esc(s.title || "")}</div>
+            <div class="scene-beat">${esc(s.narrative_beat || "")}</div>
+            ${s.dialogue && s.dialogue !== "Aucun dialogue"
+                ? `<div class="scene-dialogue">💬 ${s.dialogue_speaker ? esc(s.dialogue_speaker) + " — " : ""}« ${esc(s.dialogue)} »</div>`
+                : ``}
+            <div class="scene-meta">
+                <span>🎥 ${esc(s.shot_type || "")}</span>
+                <span>🎬 ${esc(s.camera_movement || "")}</span>
+                <span>💡 ${esc(s.lighting || "")}</span>
+                <span>🎵 ${esc(s.sound_design || "")}</span>
+            </div>
+        </div>
+    `).join("");
+    document.getElementById("film-scenes-panel").classList.add("visible");
+}
+
+function renderClips() {
+    const grid = document.getElementById("film-clips-grid");
+    grid.innerHTML = film.clips.map((c, i) => {
+        let icon = "◌", timer = "--", statusText = "En attente";
+        if (c.status === "pending")        { icon="◌"; timer="Prêt"; statusText="File d'attente"; }
+        else if (c.status === "processing"){ icon="◐"; timer=c.timerDisplay||"0s"; statusText=c.statusText||"Génération…"; }
+        else if (c.status === "done")      { icon="●"; timer="✓"; statusText="Terminé"; }
+        else if (c.status === "failed")    { icon="✕"; timer="—"; statusText="Échec"; }
+        const retryBtn = c.status === "failed"
+            ? `<button class="clip-retry-btn" onclick="retryFilmClip(${i})">🔄 Réessayer</button>`
+            : "";
+        return `
+            <div class="clip-card ${c.status}">
+                <div class="clip-number">Clip ${i + 1}</div>
+                <div class="clip-title">${esc(c.title || "")}</div>
+                <div class="clip-icon">${icon}</div>
+                <div class="clip-timer">${timer}</div>
+                <div class="clip-status-text">${statusText}</div>
+                ${retryBtn}
+            </div>
+        `;
+    }).join("");
+}
+function updateClip(index, updates) {
+    Object.assign(film.clips[index], updates);
+    renderClips();
+}
+
+async function retryFilmClip(index) {
+    if (film.isRunning) { log("Une génération est déjà en cours — attends qu'elle se termine.", "warn"); return; }
+    const clip = film.clips[index];
+    const scene = film.scenes[index];
+    if (!clip || !scene) return;
+
+    film.isRunning = true;
+    log(`🔄 Nouvelle tentative — Clip ${index + 1} (${scene.title})`, "hl");
+    document.getElementById("film-progress-panel").classList.add("visible");
+    updateClip(index, { status:"processing", statusText:"Création tâche…", timerDisplay:"--" });
+
+    try {
+        const videoId = await filmCreateVideoTask(clip.prompt, film.enableAudio !== false);
+        log(`Clip ${index + 1} : tâche recréée (${String(videoId).slice(0,40)}…)`, "ok");
+        updateClip(index, { videoId, statusText:"Attente initiale" });
+
+        const url = await filmPollUntilComplete(videoId, index);
+        updateClip(index, { status:"done", videoUrl:url, timerDisplay:"✓", statusText:"Terminé" });
+        addFilmVideoToGallery(index, url, scene.title, scene.dialogue, scene.dialogue_speaker);
+        document.getElementById("film-gallery-panel").classList.add("visible");
+
+        try {
+            await saveVideoToDB({
+                mode:"film", url, style: film.styleName || "", filmTitle: film.bible?.film_title || "",
+                sceneTitle: scene.title, prompt: clip.prompt, dialogue: scene.dialogue || "",
+                timestamp: Date.now()
+            });
+            await loadHistory();
+        } catch (dbErr) { log(`Clip ${index + 1} : erreur IndexedDB — ${dbErr.message}`, "warn"); }
+
+    } catch (err) {
+        log(`Clip ${index + 1} : nouvel échec — ${err.message}`, "err");
+        updateClip(index, { status:"failed", statusText:"Échec (réessayer ?)" });
+    } finally {
+        film.isRunning = false;
+        showCooldown("film-cooldown-badge", 0);
+    }
+}
+
+function addFilmVideoToGallery(index, url, title, dialogue, speaker) {
+    const grid = document.getElementById("film-video-grid");
+    const item = document.createElement("div");
+    item.className = "video-item";
+    const dialogueHtml = (dialogue && dialogue !== "Aucun dialogue")
+        ? `<div class="video-caption-dialogue">💬 ${speaker ? esc(speaker) + " — " : ""}« ${esc(dialogue)} »</div>`
+        : "";
+    item.innerHTML = `
+        <video controls preload="metadata" autoplay muted playsinline>
+            <source src="${url}" type="video/mp4">
+        </video>
+        <div class="video-caption">
+            <div class="video-caption-title">Clip ${index + 1} — ${esc(title || "")}</div>
+            ${dialogueHtml}
+        </div>
+    `;
+    grid.appendChild(item);
+    const n = grid.children.length;
+    document.getElementById("film-gallery-title").textContent =
+        `✦ ${n} clip${n > 1 ? "s" : ""} prêt${n > 1 ? "s" : ""} ✦`;
+}
+
+async function startFilmCreation() {
+    if (film.isRunning) return;
+
+    const userPrompt = document.getElementById("film-user-prompt").value.trim();
+    if (!userPrompt) { filmShowError("Décris d'abord ton idée de film."); return; }
+
+    const clipCount = Math.min(MAX_CLIPS, Math.max(1, parseInt(document.getElementById("film-clip-count").value, 10) || 8));
+    const styleKey = document.getElementById("film-style-select").value;
+    const enableAudio = document.getElementById("film-audio-enabled").checked;
+    const style = FILM_STYLES[styleKey];
+
+    const btn = document.getElementById("film-start-btn");
+    btn.disabled = true;
+    film.isRunning = true;
+
+    filmClearError();
+    document.getElementById("film-video-grid").innerHTML = "";
+    document.getElementById("film-bible-content").innerHTML = "";
+    document.getElementById("film-scenes-content").innerHTML = "";
+    document.getElementById("film-bible-panel").classList.remove("visible");
+    document.getElementById("film-scenes-panel").classList.remove("visible");
+    document.getElementById("film-gallery-panel").classList.remove("visible");
+    document.getElementById("film-gallery-title").textContent = "✦ Vos clips apparaîtront ici ✦";
+    document.getElementById("film-progress-panel").classList.add("visible");
+
+    film.clips = []; film.bible = null; film.scenes = [];
+    film.enableAudio = enableAudio; film.styleName = style.name;
+
+    try {
+        log("🎬 Démarrage du workflow de création de film", "hl");
+        log(`Style : ${style.icon} ${style.name} — ${clipCount} clips — Audio: ${enableAudio ? "oui" : "non"}`, "");
+
+        const { bible, scenes } = await generateBibleAndScenes(userPrompt, clipCount, styleKey);
+        film.bible = bible;
+        film.scenes = scenes;
+        renderBible(bible);
+        renderScenes(scenes);
+
+        log(`Titre : ${bible.film_title}`, "ok");
+        log(`Personnages : ${bible.characters.map(c => c.name).join(", ")}`, "ok");
+
+        log(`Pause de ${FILM_POST_BIBLE_DELAY_MS/1000}s pour laisser respirer le quota…`, "warn");
+        await filmCountdown(Math.floor(FILM_POST_BIBLE_DELAY_MS / 1000), "⏸ Pause inter-phases");
+
+        const videoPrompts = await generateVideoPrompts(bible, scenes, styleKey);
+
+        film.clips = scenes.map((s, i) => ({
+            id: i + 1, title: s.title, status: "pending", timerDisplay: "--",
+            statusText: "File d'attente", videoUrl: null, videoId: null,
+            dialogue: s.dialogue, dialogue_speaker: s.dialogue_speaker,
+            prompt: videoPrompts[i]?.prompt || ""
+        }));
+        renderClips();
+
+        log(`Pause de ${FILM_PRE_VIDEO_DELAY_MS/1000}s avant le premier appel vidéo…`, "warn");
+        await filmCountdown(Math.floor(FILM_PRE_VIDEO_DELAY_MS / 1000), "⏸ Pause pré-vidéo");
+
+        let successCount = 0;
+
+        for (let i = 0; i < clipCount; i++) {
+            if (!film.isRunning) break;
+            const scene = scenes[i];
+            const prompt = videoPrompts[i]?.prompt || "";
+
+            log(`━━━━ Clip ${i + 1}/${clipCount} — ${scene.title} ━━━━`, "hl");
+            setStatus("film-global-status-text", `Clip ${i + 1}/${clipCount} : création de la tâche…`);
+
+            let videoId;
+            try {
+                updateClip(i, { status:"processing", statusText:"Création tâche…" });
+                videoId = await filmCreateVideoTask(prompt, enableAudio);
+                log(`Clip ${i + 1} : tâche créée (${String(videoId).slice(0, 40)}…)`, "ok");
+                updateClip(i, { videoId, statusText:"Attente initiale" });
+            } catch (err) {
+                log(`Clip ${i + 1} : échec création — ${err.message}`, "err");
+                updateClip(i, { status:"failed", statusText:"Échec création" });
+                await filmCountdown(Math.floor(FILM_INTER_CLIP_DELAY_MS / 1000), "⏸ Pause inter-clip");
+                continue;
+            }
+
+            try {
+                const url = await filmPollUntilComplete(videoId, i);
+                updateClip(i, { status:"done", videoUrl:url, timerDisplay:"✓", statusText:"Terminé" });
+                addFilmVideoToGallery(i, url, scene.title, scene.dialogue, scene.dialogue_speaker);
+                document.getElementById("film-gallery-panel").classList.add("visible");
+                successCount++;
+
+                try {
+                    await saveVideoToDB({
+                        mode:"film", url, style: style.name, filmTitle: bible.film_title,
+                        sceneTitle: scene.title, prompt, dialogue: scene.dialogue || "",
+                        timestamp: Date.now()
+                    });
+                    log(`Clip ${i + 1} : sauvegardé dans l'historique`, "ok");
+                    await loadHistory();
+                } catch (dbErr) {
+                    log(`Clip ${i + 1} : erreur IndexedDB — ${dbErr.message}`, "warn");
+                }
+            } catch (err) {
+                log(`Clip ${i + 1} : ${err.message}`, "err");
+                updateClip(i, { status:"failed", statusText:"Échec génération" });
+            }
+
+            if (i < clipCount - 1 && film.isRunning) {
+                log(`Pause de ${FILM_INTER_CLIP_DELAY_MS/1000}s avant le clip suivant…`, "warn");
+                await filmCountdown(Math.floor(FILM_INTER_CLIP_DELAY_MS / 1000), "⏸ Pause inter-clip");
+            }
+        }
+
+        if (successCount > 0) {
+            setStatus("film-global-status-text", `✦ ${successCount}/${clipCount} clips générés — « ${bible.film_title} » ✦`);
+            log(`Workflow terminé — ${successCount}/${clipCount} clips.`, "ok");
+        } else {
+            setStatus("film-global-status-text", "Aucune vidéo n'a pu être générée.");
+            filmShowError("Toutes les générations ont échoué.");
+        }
+
+    } catch (err) {
+        log(`Erreur globale : ${err.message}`, "err");
+        filmShowError(err.message);
+        setStatus("film-global-status-text", "Erreur : " + err.message);
+    } finally {
+        film.isRunning = false;
+        btn.disabled = false;
+        showCooldown("film-cooldown-badge", 0);
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ███ MODE 2 — SPECTRUM (image → plusieurs vidéos multi-styles)
+// ══════════════════════════════════════════════════════════════════
+let spectrum = {
+    isRunning: false, imageDataUri: null, selectedStyles: new Set(),
+    durationFrames: 153, motionKey: "excentrique", queue: [], completed: 0
+};
+const specCountdown = makeCountdown("spec-global-status-text", "spec-cooldown-badge", () => spectrum.isRunning);
+const specWaitForQuota = makeWaitForQuota(specCountdown);
+const specApiFetch = makeApiFetch(specCountdown, specWaitForQuota);
+
+function buildSpectrumPrompt(style, motionKey) {
+    const action = RANDOM_ACTIONS[Math.floor(Math.random() * RANDOM_ACTIONS.length)];
+    const lighting = RANDOM_LIGHTING[Math.floor(Math.random() * RANDOM_LIGHTING.length)];
+    const camera = RANDOM_CAMERA[Math.floor(Math.random() * RANDOM_CAMERA.length)];
+    const motionDesc = MOTION_DESC[motionKey] || "expressive movement";
+    return `${style.prompt}. ${action}. ${motionDesc}. ${lighting}. ${camera}. Sound design: minimal foley, soft ambient textures, no music, no instruments, no dialogue. Cinematic, 9:16 vertical, 24fps, consistent character design, no text, no subtitles.`;
+}
+
+function renderStylesGrid() {
+    const grid = document.getElementById("spec-styles-grid");
+    const categories = [
+        { key:"animation", label:"📖 Animation / Manga" },
+        { key:"cinema", label:"🎬 Cinéma" },
+        { key:"painterly", label:"🖼️ Pictural / Peinture" },
+        { key:"genre", label:"🎭 Genre / Ambiance" },
+        { key:"experimental", label:"🔬 Expérimental" }
+    ];
+    grid.innerHTML = categories.map(cat => {
+        const styles = SPECTRUM_STYLES.filter(s => s.category === cat.key);
+        return `
+            <div style="width:100%; margin-bottom:0.5rem;">
+                <div style="font-size:0.7rem; color:var(--text-dim); margin-bottom:0.3rem;">${cat.label}</div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(160px,1fr)); gap:0.5rem;">
+                    ${styles.map(s => `
+                        <label class="style-checkbox ${spectrum.selectedStyles.has(s.id) ? 'checked' : ''}" data-id="${s.id}">
+                            <input type="checkbox" ${spectrum.selectedStyles.has(s.id) ? 'checked' : ''}
+                                   onchange="toggleSpecStyle('${s.id}', this.checked)">
+                            ${s.icon} ${s.name}
+                        </label>
+                    `).join("")}
+                </div>
+            </div>
+        `;
+    }).join("");
+    updateSpecGenerateBtn();
+    updateSpecDurationInfo();
+}
+
+function toggleSpecStyle(id, checked) {
+    if (checked) spectrum.selectedStyles.add(id);
+    else spectrum.selectedStyles.delete(id);
+    document.querySelectorAll(".style-checkbox").forEach(el => {
+        if (el.dataset.id === id) el.classList.toggle("checked", checked);
+    });
+    updateSpecGenerateBtn();
+    updateSpecDurationInfo();
+}
+
+function updateSpecGenerateBtn() {
+    const btn = document.getElementById("spec-generate-btn");
+    const hasImage = !!spectrum.imageDataUri;
+    const hasStyles = spectrum.selectedStyles.size > 0;
+    btn.disabled = !hasImage || !hasStyles || spectrum.isRunning;
+    btn.textContent = spectrum.isRunning
+        ? `🎬 Génération en cours… (${spectrum.completed}/${spectrum.queue.length})`
+        : `🎬 Générer ${spectrum.selectedStyles.size} vidéo${spectrum.selectedStyles.size > 1 ? 's' : ''}`;
+}
+
+function updateSpecDurationInfo() {
+    const frames = parseInt(document.getElementById("spec-duration-select").value, 10);
+    const seconds = (frames / 24).toFixed(1);
+    const totalSeconds = (frames / 24 * spectrum.selectedStyles.size).toFixed(0);
+    const info = document.getElementById("spec-duration-info");
+    info.innerHTML = `⏱ Durée : <strong>${seconds} s</strong> par vidéo · ${spectrum.selectedStyles.size} vidéo(s) sélectionnée(s) · Durée totale : <strong>~${totalSeconds} s</strong>`;
+}
+
+function specFileToDataUri(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = () => reject(new Error("Erreur lecture fichier."));
+        reader.readAsDataURL(file);
+    });
+}
+async function handleSpecFile(file) {
+    if (!file.type.startsWith("image/")) { alert("Fichier non image."); return; }
+    if (file.size > 10 * 1024 * 1024) { alert("Image trop lourde (max 10 MB)."); return; }
+    try {
+        const dataUri = await specFileToDataUri(file);
+        spectrum.imageDataUri = dataUri;
+        const previewThumb = document.getElementById("spec-preview-thumb");
+        previewThumb.src = dataUri;
+        previewThumb.classList.add("visible");
+        log(`Image chargée (${(file.size / 1024).toFixed(0)} Ko).`, "ok");
+        updateSpecGenerateBtn();
+    } catch (err) { alert("Erreur : " + err.message); }
+}
+function clearSpecImage() {
+    spectrum.imageDataUri = null;
+    document.getElementById("spec-file-input").value = "";
+    const previewThumb = document.getElementById("spec-preview-thumb");
+    previewThumb.src = "";
+    previewThumb.classList.remove("visible");
+    log("Image retirée.", "");
+    updateSpecGenerateBtn();
+}
+
+function renderSpecQueue() {
+    const panel = document.getElementById("spec-queue-panel");
+    if (spectrum.queue.length === 0) { panel.classList.add("hidden"); return; }
+    panel.classList.remove("hidden");
+    panel.innerHTML = spectrum.queue.map((item, i) => {
+        let icon = "⏳", statusText = "En attente";
+        if (item.status === "processing") { icon = "◐"; statusText = item.progress || "Génération…"; }
+        else if (item.status === "done") { icon = "✅"; statusText = "Terminé"; }
+        else if (item.status === "failed") { icon = "❌"; statusText = "Échec"; }
+        const cls = item.status === "pending" ? "pending"
+                  : item.status === "processing" ? "processing"
+                  : item.status === "done" ? "done" : "failed";
+        const durationSec = (item.numFrames / 24).toFixed(1);
+        const retryBtn = item.status === "failed"
+            ? `<button class="clip-retry-btn" style="width:auto; margin:0 0 0 0.8rem; flex-shrink:0;" onclick="retrySpecItem(${i})">🔄 Réessayer</button>`
+            : "";
+        return `
+            <div class="queue-item ${cls}">
+                <div class="queue-icon">${icon}</div>
+                <div class="queue-info">
+                    <div class="queue-style">${item.style.icon} ${esc(item.style.name)}</div>
+                    <div class="queue-meta">
+                        <span>⏱ ${durationSec}s</span>
+                        <span>🎬 ${esc(item.motionKey)}</span>
+                    </div>
+                </div>
+                <div class="queue-status">${statusText}</div>
+                ${retryBtn}
+            </div>
+        `;
+    }).join("");
+}
+
+async function retrySpecItem(index) {
+    if (spectrum.isRunning) { log("Une génération est déjà en cours — attends qu'elle se termine.", "warn"); return; }
+    const item = spectrum.queue[index];
+    if (!item) return;
+
+    spectrum.isRunning = true;
+    document.getElementById("spec-status-panel").classList.remove("hidden");
+    log(`🔄 Nouvelle tentative — ${item.style.icon} ${item.style.name}`, "hl");
+    item.status = "processing"; item.progress = "Création…";
+    renderSpecQueue();
+
+    try {
+        const prompt = item.prompt || buildSpectrumPrompt(item.style, item.motionKey);
+        item.prompt = prompt;
+        const body = { model: MODELS.video, prompt, image: spectrum.imageDataUri, num_frames: item.numFrames, frame_rate: FRAME_RATE };
+        const res = await specApiFetch(`${BASE_URL}/videos`, {
+            method: "POST", headers: apiHeaders(), body: JSON.stringify(body)
+        }, `Retry ${item.style.name} · Création`, "video");
+        if (!res.ok) { const errText = await res.text(); throw new Error(`HTTP ${res.status} — ${errText.slice(0, 120)}`); }
+        const data = await res.json();
+        const videoId = data.video_id || data.id || data.task_id;
+        if (!videoId) throw new Error("Pas de video_id.");
+        item.videoId = videoId;
+
+        const url = await pollSpecVideo(videoId, `Retry ${item.style.name}`, item);
+        item.status = "done"; item.videoUrl = url; item.progress = "Terminé";
+        spectrum.completed++;
+        renderSpecQueue();
+        addSpecVideoToGallery(item);
+        document.getElementById("spec-gallery-panel").classList.remove("hidden");
+
+        try {
+            await saveVideoToDB({ mode:"spectrum", url, style: item.style.name, sceneTitle: item.style.name, prompt, dialogue:"", timestamp: Date.now() });
+            await loadHistory();
+        } catch (dbErr) { log(`Retry : erreur IndexedDB — ${dbErr.message}`, "warn"); }
+
+    } catch (err) {
+        log(`Retry ${item.style.name} : nouvel échec — ${err.message}`, "err");
+        item.status = "failed"; item.progress = "Échec";
+        renderSpecQueue();
+    } finally {
+        spectrum.isRunning = false;
+        showCooldown("spec-cooldown-badge", 0);
+        updateSpecGenerateBtn();
+    }
+}
+
+async function startSpectrumGeneration() {
+    if (spectrum.isRunning) return;
+    if (!spectrum.imageDataUri) { alert("Choisissez une image."); return; }
+    if (spectrum.selectedStyles.size === 0) { alert("Cochez au moins un style."); return; }
+
+    spectrum.isRunning = true;
+    spectrum.completed = 0;
+
+    spectrum.durationFrames = parseInt(document.getElementById("spec-duration-select").value, 10) || 153;
+    spectrum.motionKey = document.getElementById("spec-motion-select").value;
+
+    const selectedStyles = Array.from(spectrum.selectedStyles)
+        .map(id => SPECTRUM_STYLES.find(s => s.id === id))
+        .filter(Boolean);
+
+    spectrum.queue = selectedStyles.map(style => ({
+        style, status: "pending", videoUrl: null, videoId: null, progress: null,
+        numFrames: spectrum.durationFrames, motionKey: spectrum.motionKey, prompt: null
+    }));
+
+    document.getElementById("spec-video-grid").innerHTML = "";
+    document.getElementById("spec-gallery-panel").classList.add("hidden");
+    document.getElementById("spec-status-panel").classList.remove("hidden");
+    document.getElementById("spec-queue-panel").classList.remove("hidden");
+
+    renderSpecQueue();
+    updateSpecGenerateBtn();
+
+    const durationSec = (spectrum.durationFrames / 24).toFixed(1);
+    log(`🎬 Démarrage Spectrum — ${spectrum.queue.length} vidéos à générer`, "hl");
+    log(`Durée par vidéo : ${durationSec}s | Mouvement : ${spectrum.motionKey}`, "");
+
+    try {
+        if (quotaTracker.video.length > 0) {
+            const wait = quotaTracker.waitTime("video");
+            if (wait > 0) {
+                log(`Pause de ${wait}s avant le premier appel vidéo (quota vidéo saturé)…`, "warn");
+                await specCountdown(wait, "⏸ Quota vidéo");
+            }
+        } else {
+            log(`Pause de ${SPEC_PRE_VIDEO_DELAY_MS / 1000}s avant le premier clip…`, "warn");
+            await specCountdown(Math.floor(SPEC_PRE_VIDEO_DELAY_MS / 1000), "⏸ Pause pré-vidéo");
+        }
+
+        for (let i = 0; i < spectrum.queue.length; i++) {
+            if (!spectrum.isRunning) break;
+            const item = spectrum.queue[i];
+
+            log(`━━━ Vidéo ${i+1}/${spectrum.queue.length} — ${item.style.icon} ${item.style.name} ━━━`, "hl");
+            item.status = "processing";
+            item.progress = "Création…";
+            renderSpecQueue();
+
+            const finalPrompt = buildSpectrumPrompt(item.style, spectrum.motionKey);
+            item.prompt = finalPrompt;
+
+            let videoId;
+            try {
+                const body = {
+                    model: MODELS.video, prompt: finalPrompt, image: spectrum.imageDataUri,
+                    num_frames: item.numFrames, frame_rate: FRAME_RATE
+                };
+                const res = await specApiFetch(`${BASE_URL}/videos`, {
+                    method: "POST", headers: apiHeaders(), body: JSON.stringify(body)
+                }, `Vidéo ${i+1} · Création`, "video");
+
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(`HTTP ${res.status} — ${errText.slice(0, 120)}`);
+                }
+                const data = await res.json();
+                videoId = data.video_id || data.id || data.task_id;
+                if (!videoId) throw new Error("Pas de video_id.");
+                item.videoId = videoId;
+                log(`Vidéo ${i+1} : tâche créée (${String(videoId).slice(0, 25)}…)`, "ok");
+            } catch (err) {
+                log(`Vidéo ${i+1} : échec création — ${err.message}`, "err");
+                item.status = "failed";
+                item.progress = "Échec création";
+                renderSpecQueue();
+                if (i < spectrum.queue.length - 1 && spectrum.isRunning) {
+                    await specCountdown(Math.floor(SPEC_INTER_VIDEO_DELAY_MS / 1000), "⏸ Pause inter-vidéo");
+                }
+                continue;
+            }
+
+            try {
+                const url = await pollSpecVideo(videoId, `Vidéo ${i+1}`, item);
+                item.status = "done";
+                item.videoUrl = url;
+                item.progress = "Terminé";
+                spectrum.completed++;
+                renderSpecQueue();
+                addSpecVideoToGallery(item);
+                document.getElementById("spec-gallery-panel").classList.remove("hidden");
+                log(`Vidéo ${i+1} : ✅ TERMINÉE`, "ok");
+
+                try {
+                    await saveVideoToDB({
+                        mode:"spectrum", url, style: item.style.name, sceneTitle: item.style.name,
+                        prompt: finalPrompt, dialogue:"", timestamp: Date.now()
+                    });
+                    await loadHistory();
+                } catch (dbErr) {
+                    log(`Vidéo ${i+1} : erreur IndexedDB — ${dbErr.message}`, "warn");
+                }
+            } catch (err) {
+                log(`Vidéo ${i+1} : ${err.message}`, "err");
+                item.status = "failed";
+                item.progress = "Échec";
+                renderSpecQueue();
+            }
+
+            updateSpecGenerateBtn();
+
+            if (i < spectrum.queue.length - 1 && spectrum.isRunning) {
+                log(`Pause de ${SPEC_INTER_VIDEO_DELAY_MS / 1000}s avant la vidéo suivante…`, "warn");
+                await specCountdown(Math.floor(SPEC_INTER_VIDEO_DELAY_MS / 1000), "⏸ Pause inter-vidéo");
+            }
+        }
+
+        log(`✦ Workflow terminé — ${spectrum.completed}/${spectrum.queue.length} vidéos générées ✦`,
+            spectrum.completed > 0 ? "ok" : "err");
+        setStatus("spec-global-status-text", `✦ ${spectrum.completed}/${spectrum.queue.length} vidéos générées ✦`);
+
+    } catch (err) {
+        log(`Erreur globale : ${err.message}`, "err");
+        setStatus("spec-global-status-text", "Erreur : " + err.message);
+    } finally {
+        spectrum.isRunning = false;
+        showCooldown("spec-cooldown-badge", 0);
+        updateSpecGenerateBtn();
+    }
+}
+
+async function pollSpecVideo(videoId, label, item) {
+    let remaining = Math.floor(SPEC_FIRST_POLL_DELAY_MS / 1000);
+    while (remaining > 0 && spectrum.isRunning) {
+        item.progress = `Attente… ${remaining}s`;
+        renderSpecQueue();
+        await sleep(1000);
+        remaining--;
+    }
+    if (!spectrum.isRunning) throw new Error("Annulé");
+
+    for (let attempt = 0; attempt < SPEC_MAX_POLL_ATTEMPTS; attempt++) {
+        if (!spectrum.isRunning) throw new Error("Annulé");
+        if (attempt > 0) {
+            let r = Math.floor(SPEC_POLL_INTERVAL_MS / 1000);
+            while (r > 0 && spectrum.isRunning) {
+                item.progress = `Vérif. ${attempt+1} — ${r}s`;
+                renderSpecQueue();
+                await sleep(1000);
+                r--;
+            }
+        }
+
+        const url = `${RAW_URL}/agnesapi?video_id=${encodeURIComponent(videoId)}&model_name=${encodeURIComponent(MODELS.video)}`;
+        try {
+            const r = await specApiFetch(url, { method: "GET", headers: apiHeaders() }, `${label} · Poll`);
+            const d = await r.json();
+            const status = d.status || "unknown";
+            const progress = d.progress ?? 0;
+            log(`${label} : statut="${status}", progression=${progress}%`);
+            item.progress = `${progress}%`;
+            renderSpecQueue();
+
+            if (status === "completed" || status === "succeeded") {
+                const videoUrl = d.metadata?.url || d.url || d.output?.url;
+                if (!videoUrl) throw new Error("Terminé mais pas d'URL.");
+                return videoUrl;
+            }
+            if (status === "failed" || status === "error") throw new Error("La génération a échoué.");
+        } catch (err) {
+            if (err.message.includes("échoué") || err.message.includes("URL")) throw err;
+            log(`${label} : erreur polling, on réessaie…`, "warn");
+        }
+    }
+    throw new Error("Délai maximal dépassé.");
+}
+
+function addSpecVideoToGallery(item) {
+    const grid = document.getElementById("spec-video-grid");
+    const el = document.createElement("div");
+    el.className = "video-item";
+    const durationSec = (item.numFrames / 24).toFixed(1);
+    el.innerHTML = `
+        <video controls preload="metadata" autoplay muted playsinline>
+            <source src="${item.videoUrl}" type="video/mp4">
+        </video>
+        <div class="video-caption">
+            <div class="video-caption-title">${item.style.icon} ${esc(item.style.name)}</div>
+            <div class="video-caption-meta">⏱ ${durationSec}s · 🎬 ${esc(item.motionKey)}</div>
+        </div>
+    `;
+    grid.appendChild(el);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ███ MODE 3 — VIDÉO SIMPLE (texte → un seul plan, sans découpage)
+// ══════════════════════════════════════════════════════════════════
+let simple = { isRunning:false };
+const simpleCountdown = makeCountdown("simple-global-status-text", "simple-cooldown-badge", () => simple.isRunning);
+const simpleWaitForQuota = makeWaitForQuota(simpleCountdown);
+const simpleApiFetch = makeApiFetch(simpleCountdown, simpleWaitForQuota);
+
+function showSimpleError(msg) {
+    const el = document.getElementById("simple-error-box");
+    el.textContent = msg; el.classList.add("visible");
+}
+function showSimpleErrorWithRetry(msg) {
+    const el = document.getElementById("simple-error-box");
+    el.innerHTML = `${esc(msg)}<br><button class="clip-retry-btn" style="width:auto; margin-top:0.6rem;" onclick="retrySimpleVideo()">🔄 Réessayer (même prompt, sans repayer l'étape texte)</button>`;
+    el.classList.add("visible");
+}
+function clearSimpleError() {
+    const el = document.getElementById("simple-error-box");
+    el.textContent = ""; el.classList.remove("visible");
+}
+
+async function retrySimpleVideo() {
+    if (simple.isRunning) return;
+    if (!simple.lastPrompt) { showSimpleError("Aucun prompt à rejouer — relance une génération complète."); return; }
+
+    simple.isRunning = true;
+    document.getElementById("simple-start-btn").disabled = true;
+    clearSimpleError();
+    document.getElementById("simple-status-panel").classList.add("visible");
+
+    try {
+        log("🔄 Nouvelle tentative — vidéo simple (prompt déjà généré réutilisé)", "hl");
+        setStatus("simple-global-status-text", "Création de la tâche vidéo…");
+        const videoId = await createSimpleVideoTask(simple.lastPrompt, simple.lastEnableAudio, simple.lastNumFrames);
+        log("Tâche recréée : " + String(videoId).slice(0, 40) + "…", "ok");
+
+        const url = await pollSimpleVideo(videoId);
+        setStatus("simple-global-status-text", "✅ Vidéo prête !");
+        addSimpleVideoToGallery(url, simple.lastStyleName || "");
+        document.getElementById("simple-gallery-panel").classList.add("visible");
+
+        try {
+            await saveVideoToDB({
+                mode:"simple", url, style: simple.lastStyleName || "", sceneTitle:"Vidéo simple",
+                prompt: simple.lastPrompt, dialogue:"", timestamp: Date.now()
+            });
+            await loadHistory();
+        } catch (dbErr) { log("Erreur IndexedDB : " + dbErr.message, "warn"); }
+
+    } catch (err) {
+        log("Erreur (retry) : " + err.message, "err");
+        showSimpleErrorWithRetry(err.message);
+        setStatus("simple-global-status-text", "Erreur : " + err.message);
+    } finally {
+        simple.isRunning = false;
+        document.getElementById("simple-start-btn").disabled = false;
+        showCooldown("simple-cooldown-badge", 0);
+    }
+}
+
+async function buildSimpleVideoPrompt(idea, styleKey) {
+    const style = FILM_STYLES[styleKey];
+    const sys = `You are a senior prompt engineer for a text-to-video AI model. The user gives a short scene idea in French. Produce ONE single English video prompt for a SINGLE continuous shot (no scene breakdown, just one clip).
+
+STYLE: ${style.name} — ${style.enhance}
+
+Return a single valid JSON object, no markdown fences, no commentary: {"prompt":"..."}
+Rules:
+- The prompt must be in English, vivid, under 900 characters.
+- Structure: style keywords first, then subject/action, then shot type & camera movement, then lighting, then mood & a brief ambient sound cue (no dialogue, no on-screen text).
+- End with: "cinematic, 9:16 vertical, 24fps".`;
+
+    const res = await simpleApiFetch(`${BASE_URL}/chat/completions`, {
+        method:"POST", headers: apiHeaders(),
+        body: JSON.stringify({
+            model: MODELS.text,
+            messages: [
+                { role:"system", content:sys },
+                { role:"user", content:`Idée : ${idea}` }
+            ],
+            temperature: 0.8, max_tokens: 600
+        })
+    }, "Texte · Prompt simple", "text");
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
+    let content = data.choices?.[0]?.message?.content || "";
+    content = content.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+    const s = content.indexOf("{"); const e = content.lastIndexOf("}");
+    if (s >= 0 && e > s) content = content.slice(s, e + 1);
+    let parsed;
+    try { parsed = JSON.parse(content); }
+    catch (err) { throw new Error("Réponse IA invalide pour le prompt."); }
+    if (!parsed.prompt) throw new Error("Pas de prompt généré.");
+    return parsed.prompt;
+}
+
+async function createSimpleVideoTask(prompt, enableAudio, numFrames) {
+    const body = { model: MODELS.video, prompt, width: VIDEO_WIDTH, height: VIDEO_HEIGHT, num_frames: numFrames, frame_rate: FRAME_RATE };
+    if (enableAudio) {
+        body.generate_audio = true;
+        body.audio_style = "acoustic experimental intellectual ambient, soft textures, no drums";
+    }
+    const res = await simpleApiFetch(`${BASE_URL}/videos`, {
+        method:"POST", headers: apiHeaders(), body: JSON.stringify(body)
+    }, "Vidéo · Création", "video");
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
+    const videoId = data.video_id || data.id || data.task_id;
+    if (!videoId) throw new Error("Pas de video_id retourné.");
+    return videoId;
+}
+
+async function pollSimpleVideo(videoId) {
+    let remaining = Math.floor(SPEC_FIRST_POLL_DELAY_MS / 1000);
+    while (remaining > 0 && simple.isRunning) {
+        setStatus("simple-global-status-text", `Attente initiale… ${remaining}s`);
+        await sleep(1000);
+        remaining--;
+    }
+    if (!simple.isRunning) throw new Error("Annulé");
+
+    for (let attempt = 0; attempt < SPEC_MAX_POLL_ATTEMPTS; attempt++) {
+        if (!simple.isRunning) throw new Error("Annulé");
+        if (attempt > 0) {
+            let r = Math.floor(SPEC_POLL_INTERVAL_MS / 1000);
+            while (r > 0 && simple.isRunning) {
+                setStatus("simple-global-status-text", `Vérification ${attempt+1}… ${r}s`);
+                await sleep(1000);
+                r--;
+            }
+        }
+        const url = `${RAW_URL}/agnesapi?video_id=${encodeURIComponent(videoId)}&model_name=${encodeURIComponent(MODELS.video)}`;
+        try {
+            const r = await simpleApiFetch(url, { method:"GET", headers: apiHeaders() }, "Vidéo · Poll");
+            const d = await r.json();
+            const status = d.status || "unknown";
+            const progress = d.progress ?? 0;
+            log(`Vidéo simple : statut="${status}", progression=${progress}%`);
+            setStatus("simple-global-status-text", `Génération… ${progress}%`);
+            if (status === "completed" || status === "succeeded") {
+                const videoUrl = d.metadata?.url || d.url || d.output?.url;
+                if (!videoUrl) throw new Error("Terminé mais pas d'URL.");
+                return videoUrl;
+            }
+            if (status === "failed" || status === "error") throw new Error("La génération a échoué.");
+        } catch (err) {
+            if (err.message.includes("échoué") || err.message.includes("URL")) throw err;
+            log(`Vidéo simple : erreur polling (${err.message}), on réessaie…`, "warn");
+        }
+    }
+    throw new Error("Délai maximal dépassé.");
+}
+
+function addSimpleVideoToGallery(url, styleName) {
+    const grid = document.getElementById("simple-video-grid");
+    grid.innerHTML = `
+        <div class="video-item">
+            <video controls preload="metadata" autoplay muted playsinline>
+                <source src="${url}" type="video/mp4">
+            </video>
+            <div class="video-caption">
+                <div class="video-caption-title">⚡ ${esc(styleName)}</div>
+            </div>
+        </div>
+    `;
+}
+
+async function startSimpleGeneration() {
+    if (simple.isRunning) return;
+
+    const idea = document.getElementById("simple-user-prompt").value.trim();
+    if (!idea) { showSimpleError("Décris d'abord ton idée de plan."); return; }
+
+    const styleKey = document.getElementById("simple-style-select").value;
+    const numFrames = parseInt(document.getElementById("simple-duration-select").value, 10) || 153;
+    const enableAudio = document.getElementById("simple-audio-enabled").checked;
+    const style = FILM_STYLES[styleKey];
+
+    simple.isRunning = true;
+    document.getElementById("simple-start-btn").disabled = true;
+    clearSimpleError();
+    document.getElementById("simple-video-grid").innerHTML = "";
+    document.getElementById("simple-gallery-panel").classList.remove("visible");
+    document.getElementById("simple-status-panel").classList.add("visible");
+
+    try {
+        log("⚡ Démarrage — vidéo simple", "hl");
+        setStatus("simple-global-status-text", "Rédaction du prompt vidéo…");
+        const prompt = await buildSimpleVideoPrompt(idea, styleKey);
+        log("Prompt généré : " + prompt.slice(0, 140) + "…", "ok");
+        simple.lastPrompt = prompt;
+        simple.lastStyleName = style.name;
+        simple.lastNumFrames = numFrames;
+        simple.lastEnableAudio = enableAudio;
+
+        log(`Pause de ${SPEC_PRE_VIDEO_DELAY_MS/1000}s avant la création…`, "warn");
+        await simpleCountdown(Math.floor(SPEC_PRE_VIDEO_DELAY_MS / 1000), "⏸ Pause pré-vidéo");
+
+        setStatus("simple-global-status-text", "Création de la tâche vidéo…");
+        const videoId = await createSimpleVideoTask(prompt, enableAudio, numFrames);
+        log("Tâche créée : " + String(videoId).slice(0, 40) + "…", "ok");
+
+        const url = await pollSimpleVideo(videoId);
+        setStatus("simple-global-status-text", "✅ Vidéo prête !");
+        addSimpleVideoToGallery(url, style.name);
+        document.getElementById("simple-gallery-panel").classList.add("visible");
+
+        try {
+            await saveVideoToDB({
+                mode:"simple", url, style: style.name, sceneTitle:"Vidéo simple",
+                prompt, dialogue:"", timestamp: Date.now()
+            });
+            log("Sauvegardée dans l'historique.", "ok");
+            await loadHistory();
+        } catch (dbErr) { log("Erreur IndexedDB : " + dbErr.message, "warn"); }
+
+    } catch (err) {
+        log("Erreur : " + err.message, "err");
+        if (simple.lastPrompt) showSimpleErrorWithRetry(err.message);
+        else showSimpleError(err.message);
+        setStatus("simple-global-status-text", "Erreur : " + err.message);
+    } finally {
+        simple.isRunning = false;
+        document.getElementById("simple-start-btn").disabled = false;
+        showCooldown("simple-cooldown-badge", 0);
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ███ MODE 4 — MON HISTOIRE (histoire perso → vidéo longue,
+// ███ dialogues repris mot pour mot par les personnages)
+// ══════════════════════════════════════════════════════════════════
+let story = { isRunning:false, bible:null, scenes:[], clips:[] };
+const storyCountdown = makeCountdown("story-global-status-text", "story-cooldown-badge", () => story.isRunning);
+const storyWaitForQuota = makeWaitForQuota(storyCountdown);
+const storyApiFetch = makeApiFetch(storyCountdown, storyWaitForQuota);
+
+function storyShowError(msg) {
+    const el = document.getElementById("story-error-box");
+    el.textContent = msg; el.classList.add("visible");
+}
+function storyClearError() {
+    const el = document.getElementById("story-error-box");
+    el.textContent = ""; el.classList.remove("visible");
+}
+
+function computeStoryClipCount() {
+    const totalMin = parseInt(document.getElementById("story-duration").value, 10) || 3;
+    const clipSec = (parseInt(document.getElementById("story-clip-length").value, 10) || 153) / 24;
+    return Math.min(STORY_MAX_CLIPS, Math.max(1, Math.round((totalMin * 60) / clipSec)));
+}
+function updateStoryEstimate() {
+    const count = computeStoryClipCount();
+    const estMinutes = Math.ceil(count * 3.3 + 3);
+    const el = document.getElementById("story-estimate-info");
+    if (!el) return;
+    el.innerHTML = `🎬 <strong>${count} plans</strong> seront générés et enchaînés pour atteindre la durée visée · ⏱ Temps de génération estimé : <strong>~${estMinutes} minutes</strong> · Gardez cet onglet ouvert pendant tout le processus.`;
+}
+
+async function generateStoryContinuity(userStory, clipCount, styleKey) {
+    const style = FILM_STYLES[styleKey];
+    const systemPrompt = `You are a professional video director breaking down a USER-WRITTEN STORY into exactly ${clipCount} sequential video shots (each shot = one continuous clip). Together they must render the user's story faithfully, in order, from beginning to end.
+
+USER'S STORY (verbatim, in French):
+"""
+${userStory}
+"""
+
+IMPOSED VISUAL STYLE (applies to every shot): ${style.name}
+STYLE KEYWORDS: ${style.enhance}
+
+═══════════════════════════════════════════════
+ABSOLUTE RULE — DIALOGUE MUST NEVER BE INVENTED OR REWRITTEN
+═══════════════════════════════════════════════
+- The user's story may contain spoken lines, usually marked with quotes (" " or « ») and a speaker name.
+- Whenever a shot corresponds to a moment where a character speaks in the user's story, copy that line EXACTLY, character for character — no correction, no paraphrase, no translation, no shortening. Preserve punctuation and wording 100%.
+- NEVER invent a new line of dialogue that is not present in the user's story.
+- If a shot has no spoken line in the user's story at that point, set "dialogue" to exactly "Aucun dialogue" and "dialogue_speaker" to null.
+- Distribute the story's action and dialogue across the ${clipCount} shots in correct chronological order. If the story doesn't contain enough content for ${clipCount} shots, some shots may be quiet establishing/transition beats with no dialogue — never invent dialogue to fill them.
+
+CONSISTENCY (no reference images available):
+1. Every character appearing in the story must have an EXTREMELY DETAILED "appearance" description in English, written ONCE, reused VERBATIM in every shot where they appear.
+2. The "world" description must be a single verbose English block, reused verbatim.
+3. The "visual_style_anchor" is a short English keyword block, reused verbatim at the start of every prompt.
+
+OUTPUT — a single valid JSON object, no commentary, no markdown fences:
+{
+  "bible": {
+    "story_title": "string (short, in French)",
+    "characters": [
+      { "name":"string", "role":"string (in French)", "appearance":"Extremely detailed English description, 40–80 words, reused verbatim." }
+    ],
+    "world": "Detailed English description, 30–60 words, reused verbatim.",
+    "visual_style_anchor": "Short English keyword block, reused verbatim."
+  },
+  "scenes": [
+    {
+      "scene_number": 1,
+      "title": "string (in French, short)",
+      "characters_present": ["name1"],
+      "location": "string",
+      "narrative_beat": "string (in French) — what happens visually in this shot",
+      "dialogue": "EXACT verbatim line from the user's story, in French, or 'Aucun dialogue'",
+      "dialogue_speaker": "name or null",
+      "shot_type": "e.g. 'medium close-up'",
+      "camera_movement": "e.g. 'slow push in'",
+      "lighting": "string (in English)",
+      "mood": "string (in French)",
+      "sound_design": "string (in English, ambient only, never describes speech)"
+    }
+  ]
+}
+
+Return EXACTLY ${clipCount} scenes, covering the user's story from start to end in order. No filler, no invented plot beyond what's implied by the story.`;
+
+    log("Phase 1 — Analyse de votre histoire et découpage en plans…", "hl");
+    setStatus("story-global-status-text", "L'agent lit votre histoire et prépare le découpage…");
+
+    const res = await storyApiFetch(`${BASE_URL}/chat/completions`, {
+        method: "POST", headers: apiHeaders(),
+        body: JSON.stringify({
+            model: MODELS.text,
+            messages: [
+                { role:"system", content:systemPrompt },
+                { role:"user", content:`Voici mon histoire complète, à découper en ${clipCount} plans, sans jamais inventer de dialogue :\n${userStory}` }
+            ],
+            temperature: 0.5,
+            max_tokens: 8000
+        })
+    }, "Texte · Découpage histoire", "text");
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
+
+    let content = data.choices?.[0]?.message?.content || "";
+    content = content.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+    const start = content.indexOf("{"); const end = content.lastIndexOf("}");
+    if (start >= 0 && end > start) content = content.slice(start, end + 1);
+
+    let parsed;
+    try { parsed = JSON.parse(content); }
+    catch (e) {
+        log("JSON brut reçu : " + content.slice(0, 600), "err");
+        throw new Error("Le découpage n'est pas un JSON valide.");
+    }
+    if (!parsed.bible || !Array.isArray(parsed.scenes)) throw new Error("Structure de découpage invalide.");
+
+    parsed.scenes = parsed.scenes.slice(0, clipCount);
+    while (parsed.scenes.length < clipCount) {
+        const n = parsed.scenes.length + 1;
+        parsed.scenes.push({
+            scene_number:n, title:`Plan ${n}`, characters_present:[], location:"",
+            narrative_beat:"Plan de transition.", dialogue:"Aucun dialogue",
+            dialogue_speaker:null, shot_type:"wide shot", camera_movement:"slow pan",
+            lighting:"natural light", mood:"contemplatif", sound_design:"ambient textures"
+        });
+    }
+    log(`Découpage : ${parsed.scenes.length} plans générés.`, "ok");
+    return parsed;
+}
+
+async function generateStoryVideoPrompts(bible, scenes, styleKey) {
+    const bibleBlock = `
+STORY TITLE: ${bible.story_title || ""}
+
+VISUAL STYLE ANCHOR (copy verbatim at start of every prompt):
+"${bible.visual_style_anchor}"
+
+WORLD DESCRIPTION (copy verbatim in every prompt):
+"${bible.world}"
+
+CHARACTERS — copy exact "appearance" string for each character present:
+${(bible.characters || []).map(c => `- ${c.name} (${c.role}): ${c.appearance}`).join("\n")}
+`;
+    const BATCH = 5;
+    const allPrompts = [];
+
+    for (let b = 0; b < scenes.length; b += BATCH) {
+        if (b > 0) {
+            log(`Pause inter-batches de ${STORY_TEXT_INTER_CALL_DELAY_MS / 1000}s…`, "warn");
+            await storyCountdown(Math.floor(STORY_TEXT_INTER_CALL_DELAY_MS / 1000), "⏸ Pause anti rate-limit");
+        }
+
+        const slice = scenes.slice(b, b + BATCH);
+        const scenesBlock = slice.map(s => {
+            const chars = (s.characters_present || []).join(", ") || "(aucun personnage nommé)";
+            const dialogueLine = (s.dialogue && s.dialogue !== "Aucun dialogue")
+                ? `EXACT LINE TO BE SPOKEN ALOUD BY ${s.dialogue_speaker || "the character"} (verbatim, do not translate or alter): "${s.dialogue}"`
+                : `No dialogue in this shot.`;
+            return `
+SHOT ${s.scene_number}:
+- Title: ${s.title}
+- Characters present: ${chars}
+- Location: ${s.location}
+- Action: ${s.narrative_beat}
+- Shot type: ${s.shot_type}
+- Camera: ${s.camera_movement}
+- Lighting: ${s.lighting}
+- Mood: ${s.mood}
+- Sound design: ${s.sound_design}
+- ${dialogueLine}
+`;
+        }).join("\n");
+
+        const sys = `You are a senior prompt engineer for a text-to-video AI model that can render spoken dialogue with lip-sync when clearly instructed. For each shot, produce ONE English video prompt.
+
+SKELETON (exact order):
+[1. VISUAL STYLE ANCHOR] verbatim.
+[2. WORLD] verbatim.
+[3. CHARACTERS PRESENT] — copy each character's "appearance" verbatim, preceded by name.
+[4. LOCATION]
+[5. ACTION] — present tense, vivid, 1–2 sentences.
+[6. SHOT] — shot_type + camera_movement.
+[7. LIGHTING]
+[8. DIALOGUE INSTRUCTION] — if the shot has a line to speak, write clearly that the named character looks toward camera/scene partner and says aloud, in French, with natural lip-sync and vocal performance, the EXACT quoted line copied character-for-character from the input (do not translate, do not alter). If no dialogue, omit this block and instead add a brief ambient sound cue from sound_design.
+[9. Tail] — "cinematic, 9:16 vertical, 24fps, coherent continuity with previous shots, same character designs".
+
+RULES:
+- Output a single valid JSON object: {"prompts":[{"scene_number":1,"prompt":"...","has_dialogue":true}, ...]}
+- No markdown fences, no commentary.
+- Every prompt under 950 characters.
+- Never paraphrase or invent the quoted dialogue line — copy it exactly as given.
+- "has_dialogue" must be true only if a DIALOGUE INSTRUCTION block was included.
+
+CONTEXT:
+${bibleBlock}
+`;
+
+        log(`Phase 2 — Prompts vidéo (${b + 1}–${Math.min(b + BATCH, scenes.length)} / ${scenes.length})…`, "hl");
+        setStatus("story-global-status-text", `L'agent rédige les prompts vidéo… (${b + 1}–${Math.min(b + BATCH, scenes.length)} / ${scenes.length})`);
+
+        const res = await storyApiFetch(`${BASE_URL}/chat/completions`, {
+            method: "POST", headers: apiHeaders(),
+            body: JSON.stringify({
+                model: MODELS.text,
+                messages: [
+                    { role:"system", content:sys },
+                    { role:"user", content:`SHOTS TO PROMPT:\n${scenesBlock}\n\nReturn the JSON with exactly ${slice.length} prompts, one per shot, in order.` }
+                ],
+                temperature: 0.6,
+                max_tokens: 4000
+            })
+        }, `Texte · Prompts batch ${Math.floor(b/BATCH) + 1}`, "text");
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
+
+        let content = data.choices?.[0]?.message?.content || "";
+        content = content.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+        const s = content.indexOf("{"); const e = content.lastIndexOf("}");
+        if (s >= 0 && e > s) content = content.slice(s, e + 1);
+
+        let parsed;
+        try { parsed = JSON.parse(content); }
+        catch (err) {
+            log("Batch prompts — JSON invalide, fallback local.", "warn");
+            parsed = { prompts: [] };
+        }
+        const arr = Array.isArray(parsed.prompts) ? parsed.prompts : [];
+
+        for (let i = 0; i < slice.length; i++) {
+            const p = arr[i];
+            const sc = slice[i];
+            const hasDialogue = !!(sc.dialogue && sc.dialogue !== "Aucun dialogue");
+            let promptText = (p && (p.prompt || p.text)) ? String(p.prompt || p.text) : null;
+            if (!promptText || promptText.length < 40) {
+                const chars = (sc.characters_present || []).map(n => {
+                    const c = (bible.characters || []).find(x => x.name === n);
+                    return c ? `${c.name}: ${c.appearance}` : n;
+                }).join(" ");
+                const dialogueBlock = hasDialogue
+                    ? `${sc.dialogue_speaker || "The character"} looks toward the scene and says aloud, in French, with natural lip-sync: "${sc.dialogue}". `
+                    : "";
+                promptText =
+                    `${bible.visual_style_anchor} ${bible.world} ${chars} ` +
+                    `Location: ${sc.location}. Action: ${sc.narrative_beat}. ${dialogueBlock}` +
+                    `Shot: ${sc.shot_type}, ${sc.camera_movement}. Lighting: ${sc.lighting}. ` +
+                    `Mood: ${sc.mood}. cinematic, 9:16 vertical, 24fps, consistent character design.`;
+            }
+            allPrompts.push({ scene_number: sc.scene_number, prompt: promptText, has_dialogue: hasDialogue });
+        }
+    }
+    log(`Phase 2 — ${allPrompts.length} prompts vidéo prêts.`, "ok");
+    return allPrompts;
+}
+
+async function storyCreateVideoTask(prompt, hasDialogue, numFrames) {
+    const body = {
+        model: MODELS.video, prompt,
+        width: VIDEO_WIDTH, height: VIDEO_HEIGHT, num_frames: numFrames, frame_rate: FRAME_RATE,
+        generate_audio: true
+    };
+    body.audio_style = hasDialogue
+        ? "clear spoken French dialogue, natural voice performance, lip-synced speech, minimal background ambience"
+        : "acoustic experimental intellectual ambient, soft textures, no drums, no dialogue";
+    const res = await storyApiFetch(`${BASE_URL}/videos`, {
+        method:"POST", headers: apiHeaders(), body: JSON.stringify(body)
+    }, "Vidéo · Création", "video");
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
+    const videoId = data.video_id || data.id || data.task_id;
+    if (!videoId) throw new Error("Pas de video_id retourné.");
+    return videoId;
+}
+
+async function storyPollUntilComplete(videoId, clipIndex) {
+    let remaining = Math.floor(STORY_FIRST_POLL_DELAY_MS / 1000);
+    while (remaining > 0 && story.isRunning) {
+        updateStoryClip(clipIndex, { status:"processing", timerDisplay:`${remaining}s`, statusText:"Attente initiale (2 min)" });
+        await sleep(1000);
+        remaining--;
+    }
+    if (!story.isRunning) throw new Error("Annulé");
+
+    for (let attempt = 0; attempt < STORY_MAX_POLL_ATTEMPTS; attempt++) {
+        if (!story.isRunning) throw new Error("Annulé");
+        if (attempt > 0) {
+            let r = Math.floor(STORY_POLL_INTERVAL_MS / 1000);
+            while (r > 0 && story.isRunning) {
+                updateStoryClip(clipIndex, { timerDisplay:`${r}s`, statusText:`Vérif. ${attempt + 1}` });
+                await sleep(1000);
+                r--;
+            }
+            if (!story.isRunning) throw new Error("Annulé");
+        }
+
+        log(`Plan ${clipIndex + 1} : vérification n°${attempt + 1}…`, "hl");
+        setStatus("story-global-status-text", `Plan ${clipIndex + 1} : vérification ${attempt + 1}…`);
+
+        const url = `${RAW_URL}/agnesapi?video_id=${encodeURIComponent(videoId)}&model_name=${encodeURIComponent(MODELS.video)}`;
+        try {
+            const r = await storyApiFetch(url, { method:"GET", headers: apiHeaders() }, `Vidéo · Poll plan ${clipIndex + 1}`);
+            const d = await r.json();
+            const status = d.status || "unknown";
+            const progress = d.progress ?? 0;
+            log(`Plan ${clipIndex + 1} : statut="${status}", progression=${progress}%`);
+            updateStoryClip(clipIndex, { statusText:`Génération… ${progress}%`, timerDisplay:`${progress}%` });
+
+            if (status === "completed" || status === "succeeded") {
+                const videoUrl = d.metadata?.url || d.url || d.output?.url;
+                if (!videoUrl) throw new Error("Terminé mais pas d'URL.");
+                log(`Plan ${clipIndex + 1} : TERMINÉ !`, "ok");
+                return videoUrl;
+            }
+            if (status === "failed" || status === "error") throw new Error("La génération a échoué.");
+        } catch (err) {
+            if (err.message.includes("échoué") || err.message.includes("URL")) throw err;
+            log(`Plan ${clipIndex + 1} : erreur polling (${err.message}), on réessaie…`, "warn");
+        }
+    }
+    throw new Error("Délai maximal dépassé.");
+}
+
+function renderStoryScenes(scenes) {
+    const el = document.getElementById("story-scenes-content");
+    el.innerHTML = scenes.map(s => `
+        <div class="scene-item">
+            <div class="scene-header">
+                <span class="scene-number">Plan ${s.scene_number}</span>
+            </div>
+            <div class="scene-title">${esc(s.title || "")}</div>
+            <div class="scene-beat">${esc(s.narrative_beat || "")}</div>
+            ${s.dialogue && s.dialogue !== "Aucun dialogue"
+                ? `<div class="scene-dialogue">💬 ${s.dialogue_speaker ? esc(s.dialogue_speaker) + " — " : ""}« ${esc(s.dialogue)} »</div>`
+                : `<div class="scene-meta"><span>🔇 Aucun dialogue</span></div>`}
+            <div class="scene-meta">
+                <span>🎥 ${esc(s.shot_type || "")}</span>
+                <span>🎬 ${esc(s.camera_movement || "")}</span>
+                <span>💡 ${esc(s.lighting || "")}</span>
+            </div>
+        </div>
+    `).join("");
+    document.getElementById("story-scenes-panel").classList.add("visible");
+}
+
+function renderStoryClips() {
+    const grid = document.getElementById("story-clips-grid");
+    grid.innerHTML = story.clips.map((c, i) => {
+        let icon = "◌", timer = "--", statusText = "En attente";
+        if (c.status === "pending")        { icon="◌"; timer="Prêt"; statusText="File d'attente"; }
+        else if (c.status === "processing"){ icon="◐"; timer=c.timerDisplay||"0s"; statusText=c.statusText||"Génération…"; }
+        else if (c.status === "done")      { icon="●"; timer="✓"; statusText="Terminé"; }
+        else if (c.status === "failed")    { icon="✕"; timer="—"; statusText="Échec"; }
+        return `
+            <div class="clip-card ${c.status}">
+                <div class="clip-number">Plan ${i + 1}${c.hasDialogue ? " 💬" : ""}</div>
+                <div class="clip-title">${esc(c.title || "")}</div>
+                <div class="clip-icon">${icon}</div>
+                <div class="clip-timer">${timer}</div>
+                <div class="clip-status-text">${statusText}</div>
+                ${c.status === "failed" ? `<button class="clip-retry-btn" onclick="retryStoryClip(${i})">🔄 Réessayer</button>` : ""}
+            </div>
+        `;
+    }).join("");
+}
+function updateStoryClip(index, updates) {
+    Object.assign(story.clips[index], updates);
+    renderStoryClips();
+}
+
+async function retryStoryClip(index) {
+    if (story.isRunning) { log("Une génération est déjà en cours — attends qu'elle se termine.", "warn"); return; }
+    const clip = story.clips[index];
+    if (!clip) return;
+
+    story.isRunning = true;
+    log(`🔄 Nouvelle tentative — Plan ${index + 1}`, "hl");
+    document.getElementById("story-progress-panel").classList.add("visible");
+    updateStoryClip(index, { status:"processing", statusText:"Création tâche…", timerDisplay:"--" });
+
+    try {
+        const videoId = await storyCreateVideoTask(clip.prompt, clip.hasDialogue, story.numFrames || 153);
+        log(`Plan ${index + 1} : tâche recréée (${String(videoId).slice(0,40)}…)`, "ok");
+        updateStoryClip(index, { videoId, statusText:"Attente initiale" });
+
+        const url = await storyPollUntilComplete(videoId, index);
+        updateStoryClip(index, { status:"done", videoUrl:url, timerDisplay:"✓", statusText:"Terminé" });
+        addStoryVideoToGallery(index, url, clip.title, clip.dialogue, clip.dialogue_speaker);
+        document.getElementById("story-gallery-panel").classList.add("visible");
+
+        try {
+            await saveVideoToDB({
+                mode:"story", url, style: story.styleName || "", filmTitle: story.bible?.story_title || "",
+                sceneTitle: clip.title, prompt: clip.prompt, dialogue: clip.dialogue || "",
+                timestamp: Date.now()
+            });
+            await loadHistory();
+        } catch (dbErr) { log(`Plan ${index + 1} : erreur IndexedDB — ${dbErr.message}`, "warn"); }
+
+    } catch (err) {
+        log(`Plan ${index + 1} : nouvel échec — ${err.message}`, "err");
+        updateStoryClip(index, { status:"failed", statusText:"Échec (réessayer ?)" });
+    } finally {
+        story.isRunning = false;
+        showCooldown("story-cooldown-badge", 0);
+    }
+}
+
+function addStoryVideoToGallery(index, url, title, dialogue, speaker) {
+    const grid = document.getElementById("story-video-grid");
+    const item = document.createElement("div");
+    item.className = "video-item";
+    const dialogueHtml = (dialogue && dialogue !== "Aucun dialogue")
+        ? `<div class="video-caption-dialogue">💬 ${speaker ? esc(speaker) + " — " : ""}« ${esc(dialogue)} »</div>`
+        : "";
+    item.innerHTML = `
+        <video controls preload="metadata" autoplay muted playsinline>
+            <source src="${url}" type="video/mp4">
+        </video>
+        <div class="video-caption">
+            <div class="video-caption-title">Plan ${index + 1} — ${esc(title || "")}</div>
+            ${dialogueHtml}
+        </div>
+    `;
+    grid.appendChild(item);
+    const n = grid.children.length;
+    document.getElementById("story-gallery-title").textContent =
+        `✦ ${n} plan${n > 1 ? "s" : ""} prêt${n > 1 ? "s" : ""} ✦`;
+}
+
+async function startStoryCreation() {
+    if (story.isRunning) return;
+
+    const userStory = document.getElementById("story-user-text").value.trim();
+    if (!userStory) { storyShowError("Écris d'abord ton histoire."); return; }
+
+    const styleKey = document.getElementById("story-style-select").value;
+    const numFrames = parseInt(document.getElementById("story-clip-length").value, 10) || 153;
+    const clipCount = computeStoryClipCount();
+    const style = FILM_STYLES[styleKey];
+
+    const btn = document.getElementById("story-start-btn");
+    btn.disabled = true;
+    story.isRunning = true;
+
+    storyClearError();
+    document.getElementById("story-video-grid").innerHTML = "";
+    document.getElementById("story-scenes-content").innerHTML = "";
+    document.getElementById("story-scenes-panel").classList.remove("visible");
+    document.getElementById("story-gallery-panel").classList.remove("visible");
+    document.getElementById("story-gallery-title").textContent = "✦ Votre vidéo apparaîtra ici ✦";
+    document.getElementById("story-progress-panel").classList.add("visible");
+
+    story.clips = []; story.bible = null; story.scenes = [];
+    story.numFrames = numFrames; story.styleName = style.name;
+
+    try {
+        log("📝 Démarrage — création à partir de votre histoire", "hl");
+        log(`Style : ${style.icon} ${style.name} — ${clipCount} plans — durée visée ≈ ${document.getElementById("story-duration").value} min`, "");
+
+        const { bible, scenes } = await generateStoryContinuity(userStory, clipCount, styleKey);
+        story.bible = bible;
+        story.scenes = scenes;
+        renderStoryScenes(scenes);
+        log(`Découpage prêt — ${scenes.length} plans.`, "ok");
+
+        log(`Pause de ${STORY_POST_BIBLE_DELAY_MS/1000}s pour laisser respirer le quota…`, "warn");
+        await storyCountdown(Math.floor(STORY_POST_BIBLE_DELAY_MS / 1000), "⏸ Pause inter-phases");
+
+        const videoPrompts = await generateStoryVideoPrompts(bible, scenes, styleKey);
+
+        story.clips = scenes.map((s, i) => ({
+            id: i + 1, title: s.title, status: "pending", timerDisplay: "--",
+            statusText: "File d'attente", videoUrl: null, videoId: null,
+            dialogue: s.dialogue, dialogue_speaker: s.dialogue_speaker,
+            prompt: videoPrompts[i]?.prompt || "", hasDialogue: videoPrompts[i]?.has_dialogue || false
+        }));
+        renderStoryClips();
+
+        log(`Pause de ${STORY_PRE_VIDEO_DELAY_MS/1000}s avant le premier appel vidéo…`, "warn");
+        await storyCountdown(Math.floor(STORY_PRE_VIDEO_DELAY_MS / 1000), "⏸ Pause pré-vidéo");
+
+        let successCount = 0;
+
+        for (let i = 0; i < clipCount; i++) {
+            if (!story.isRunning) break;
+            const scene = scenes[i];
+            const prompt = videoPrompts[i]?.prompt || "";
+            const hasDialogue = videoPrompts[i]?.has_dialogue || false;
+
+            log(`━━━━ Plan ${i + 1}/${clipCount} — ${scene.title} ━━━━`, "hl");
+            setStatus("story-global-status-text", `Plan ${i + 1}/${clipCount} : création de la tâche…`);
+
+            let videoId;
+            try {
+                updateStoryClip(i, { status:"processing", statusText:"Création tâche…" });
+                videoId = await storyCreateVideoTask(prompt, hasDialogue, numFrames);
+                log(`Plan ${i + 1} : tâche créée (${String(videoId).slice(0, 40)}…)`, "ok");
+                updateStoryClip(i, { videoId, statusText:"Attente initiale" });
+            } catch (err) {
+                log(`Plan ${i + 1} : échec création — ${err.message}`, "err");
+                updateStoryClip(i, { status:"failed", statusText:"Échec création" });
+                await storyCountdown(Math.floor(STORY_INTER_CLIP_DELAY_MS / 1000), "⏸ Pause inter-plan");
+                continue;
+            }
+
+            try {
+                const url = await storyPollUntilComplete(videoId, i);
+                updateStoryClip(i, { status:"done", videoUrl:url, timerDisplay:"✓", statusText:"Terminé" });
+                addStoryVideoToGallery(i, url, scene.title, scene.dialogue, scene.dialogue_speaker);
+                document.getElementById("story-gallery-panel").classList.add("visible");
+                successCount++;
+
+                try {
+                    await saveVideoToDB({
+                        mode:"story", url, style: style.name, filmTitle: bible.story_title || "",
+                        sceneTitle: scene.title, prompt, dialogue: scene.dialogue || "",
+                        timestamp: Date.now()
+                    });
+                    log(`Plan ${i + 1} : sauvegardé dans l'historique`, "ok");
+                    await loadHistory();
+                } catch (dbErr) {
+                    log(`Plan ${i + 1} : erreur IndexedDB — ${dbErr.message}`, "warn");
+                }
+            } catch (err) {
+                log(`Plan ${i + 1} : ${err.message}`, "err");
+                updateStoryClip(i, { status:"failed", statusText:"Échec génération" });
+            }
+
+            if (i < clipCount - 1 && story.isRunning) {
+                log(`Pause de ${STORY_INTER_CLIP_DELAY_MS/1000}s avant le plan suivant…`, "warn");
+                await storyCountdown(Math.floor(STORY_INTER_CLIP_DELAY_MS / 1000), "⏸ Pause inter-plan");
+            }
+        }
+
+        if (successCount > 0) {
+            setStatus("story-global-status-text", `✦ ${successCount}/${clipCount} plans générés ✦`);
+            log(`Workflow terminé — ${successCount}/${clipCount} plans.`, "ok");
+        } else {
+            setStatus("story-global-status-text", "Aucune vidéo n'a pu être générée.");
+            storyShowError("Toutes les générations ont échoué.");
+        }
+
+    } catch (err) {
+        log(`Erreur globale : ${err.message}`, "err");
+        storyShowError(err.message);
+        setStatus("story-global-status-text", "Erreur : " + err.message);
+    } finally {
+        story.isRunning = false;
+        btn.disabled = false;
+        showCooldown("story-cooldown-badge", 0);
+    }
+}
+
+function populateStyleSelect(selectId, defaultKey) {
+    const el = document.getElementById(selectId);
+    el.innerHTML = Object.entries(FILM_STYLES).map(([key, s]) =>
+        `<option value="${key}" ${key === defaultKey ? "selected" : ""}>${s.icon} ${esc(s.name)}</option>`
+    ).join("");
+}
+
+// ==================================================================
+// INIT
+// ==================================================================
+(async function init() {
+    const stored = localStorage.getItem("agnes_api_key");
+    if (stored) document.getElementById("api-key-input").value = stored;
+
+    populateStyleSelect("film-style-select", "documentary");
+    populateStyleSelect("simple-style-select", "cinema-auteur");
+    populateStyleSelect("story-style-select", "cinema-auteur");
+    renderStylesGrid();
+    updateStoryEstimate();
+    quotaTracker.render();
+
+    const uploadArea = document.getElementById("spec-upload-area");
+    const fileInput = document.getElementById("spec-file-input");
+    uploadArea.addEventListener("click", () => fileInput.click());
+    uploadArea.addEventListener("dragover", (e) => { e.preventDefault(); uploadArea.classList.add("dragover"); });
+    uploadArea.addEventListener("dragleave", () => uploadArea.classList.remove("dragover"));
+    uploadArea.addEventListener("drop", (e) => {
+        e.preventDefault(); uploadArea.classList.remove("dragover");
+        if (e.dataTransfer.files.length) handleSpecFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener("change", (e) => {
+        if (e.target.files.length) handleSpecFile(e.target.files[0]);
+    });
+    document.getElementById("spec-duration-select").addEventListener("change", updateSpecDurationInfo);
+
+    try {
+        await openDB();
+        log("IndexedDB initialisée.", "ok");
+        await loadHistory();
+    } catch (e) {
+        log("Erreur IndexedDB : " + e.message, "err");
+    }
+
+    log("CinéIA Suite — Prêt (4 modes disponibles)", "ok");
+    console.log("CinéIA Suite — Prêt");
+})();
+</script>
+</body>
+</html>
